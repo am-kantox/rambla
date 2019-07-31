@@ -51,20 +51,21 @@ defmodule Rambla.Connection do
         :start,
         %Rambla.Connection{conn_params: conn_params, conn_type: conn_type}
       ) do
-
     case conn_type.connect(conn_params) do
       %Rambla.Connection{conn: conn, conn_pid: pid, errors: []} = state when not is_nil(conn) ->
         if is_nil(pid),
           do: Logger.warn("[🐰] No PID returned from connection. Monitoring is disabled."),
           else: Process.monitor(pid)
+
         {:noreply, state}
 
       state ->
-        Logger.error """
+        Logger.error("""
         [🐰] Failed to connect with params #{inspect(conn_params)}.
             State: #{inspect(state)}.
             Retrying...
-        """
+        """)
+
         Process.sleep(@reconnect_interval)
         {:noreply, state, {:continue, :start}}
     end
@@ -87,11 +88,15 @@ defmodule Rambla.Connection do
     do: {:reply, {:error, {:no_connection, {message, opts}}}, state}
 
   @impl GenServer
-  def handle_call({:publish, %{} = message, opts}, _, %Rambla.Connection{conn: conn, conn_type: conn_type} = state),
-    do: {:reply, conn_type.publish(Map.put(conn, :opts, opts), message), state}
+  def handle_call(
+        {:publish, %{} = message, opts},
+        _,
+        %Rambla.Connection{conn: conn, conn_type: conn_type} = state
+      ),
+      do: {:reply, conn_type.publish(Map.put(conn, :opts, opts), message), state}
 
   @impl GenServer
-  def handle_call(:conn, _, %Rambla.Connection{conn: conn, conn_type: conn_type} = state),
+  def handle_call(:conn, _, %Rambla.Connection{} = state),
     do: {:reply, state, state}
 
   @doc false

@@ -1,4 +1,7 @@
 defmodule Rambla.Redis do
+  @moduledoc """
+  Default connection implementation for 🔴 Redis.
+  """
   @behaviour Rambla.Connection
 
   @impl Rambla.Connection
@@ -12,15 +15,16 @@ defmodule Rambla.Redis do
 
     config = struct(Exredis.Config.Config, params)
 
-    with {:ok, pid} <- Exredis.start_link(config) do
-      %Rambla.Connection{
-        conn: %{pid: pid},
-        conn_type: __MODULE__,
-        conn_pid: pid,
-        conn_params: params,
-        errors: []
-      }
-    else
+    case Exredis.start_link(config) do
+      {:ok, pid} ->
+        %Rambla.Connection{
+          conn: %{pid: pid},
+          conn_type: __MODULE__,
+          conn_pid: pid,
+          conn_params: params,
+          errors: []
+        }
+
       error ->
         %Rambla.Connection{
           conn: nil,

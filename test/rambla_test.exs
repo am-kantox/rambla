@@ -31,6 +31,7 @@ defmodule RamblaTest do
     ]
 
     [ok: _, ok: _] = Rambla.ConnectionPool.start_pools(opts)
+    {:ok, _pid} = Rambla.Support.Subscriber.start_link()
 
     :ok
   end

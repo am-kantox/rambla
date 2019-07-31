@@ -2,7 +2,7 @@ defmodule Rambla.MixProject do
   use Mix.Project
 
   @app :rambla
-  @version "0.1.0"
+  @version "0.2.0"
   System.put_env("MIX_LOADED_APP", to_string(@app))
 
   def project do
@@ -28,12 +28,13 @@ defmodule Rambla.MixProject do
 
   def application do
     [
-      extra_applications: [:logger, :poolboy],
+      extra_applications: [:logger, :poolboy, :envio],
       mod: {Rambla.Application, []}
     ]
   end
 
   defp elixirc_paths(:test), do: ["lib", "test/support"]
+  # defp elixirc_paths(:dev), do: ["lib", "test/support"]
   defp elixirc_paths(_), do: ["lib"]
 
   defp aliases do

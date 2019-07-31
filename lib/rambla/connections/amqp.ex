@@ -1,4 +1,7 @@
 defmodule Rambla.Amqp do
+  @moduledoc """
+  Default connection implementation for 🐰 Rabbit.
+  """
   @behaviour Rambla.Connection
 
   #  rabbit = Keyword.get(state, :conn, Application.get_env(:eventory, :amqp, []))
