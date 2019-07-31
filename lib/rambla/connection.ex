@@ -49,10 +49,9 @@ defmodule Rambla.Connection do
   @impl GenServer
   def handle_continue(
         :start,
-        %Rambla.Connection{conn_params: conn_params, conn_type: conn_type} = conn
+        %Rambla.Connection{conn_params: conn_params, conn_type: conn_type}
       ) do
 
-    IO.inspect(conn, label: "Connection")
     case conn_type.connect(conn_params) do
       %Rambla.Connection{conn: conn, conn_pid: pid, errors: []} = state when not is_nil(conn) ->
         if is_nil(pid),
@@ -73,6 +72,14 @@ defmodule Rambla.Connection do
 
   @doc """
   Publishes a message to the connection established.
+
+  Expects the following options to be passed:
+
+      %{
+        queue: "queue-name",
+        exchange: "exchange-name"
+      }
+
   Returns `{:ok, response}` or `{:error, reason}`.
   """
   @impl GenServer
@@ -80,9 +87,12 @@ defmodule Rambla.Connection do
     do: {:reply, {:error, {:no_connection, {message, opts}}}, state}
 
   @impl GenServer
-  def handle_call({:publish, %{} = message, opts}, _, %Rambla.Connection{conn: conn, conn_type: conn_type} = state) do
-    {:reply, conn_type.publish(Map.put(conn, :opts, opts), message), state}
-  end
+  def handle_call({:publish, %{} = message, opts}, _, %Rambla.Connection{conn: conn, conn_type: conn_type} = state),
+    do: {:reply, conn_type.publish(Map.put(conn, :opts, opts), message), state}
+
+  @impl GenServer
+  def handle_call(:conn, _, %Rambla.Connection{conn: conn, conn_type: conn_type} = state),
+    do: {:reply, state, state}
 
   @doc false
   # Stop GenServer. Will be restarted by Supervisor.

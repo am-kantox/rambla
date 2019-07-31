@@ -31,7 +31,12 @@ defmodule Rambla.ConnectionPool do
   @spec pools :: [{:undefined, pid() | :restarting, :worker | :supervisor, :supervisor.modules()}]
   def pools, do: DynamicSupervisor.which_children(Rambla.ConnectionPool)
 
-  @spec publish(type :: atom(), message: map(), opts :: keyword()) :: Rambla.Connection.outcome()
+  @spec publish(type :: atom(), message :: map(), opts :: keyword()) ::
+          Rambla.Connection.outcome()
   def publish(type, %{} = message, opts \\ []),
     do: :poolboy.transaction(type, &GenServer.call(&1, {:publish, message, opts}))
+
+  @spec conn(type :: atom()) :: any()
+  def conn(type),
+    do: :poolboy.transaction(type, &GenServer.call(&1, :conn))
 end

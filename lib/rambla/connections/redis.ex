@@ -34,9 +34,9 @@ defmodule Rambla.Redis do
 
   @impl Rambla.Connection
   def publish(%{pid: pid}, message) when is_binary(message),
-    do: publish(%{pid: pid, chan: chan, opts: opts}, Jason.decode!(message))
+    do: publish(%{pid: pid}, Jason.decode!(message))
 
   @impl Rambla.Connection
-  def publish(%{pid: pid}, %{call: call, args: args} = _message),
-    do: {:ok, apply(Exredis.Api, call, [pid | args])}
+  def publish(%{pid: pid}, message),
+    do: {:ok, for({k, v} <- message, do: Exredis.Api.set(pid, k, v))}
 end
