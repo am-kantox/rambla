@@ -81,7 +81,10 @@ defmodule Rambla.MixProject do
       canonical: "http://hexdocs.pm/#{@app}",
       logo: "stuff/logo-48x48.png",
       extras: ["README.md"],
-      groups_for_modules: []
+      groups_for_modules: [
+        Backends: [Rambla.Amqp, Rambla.Redis],
+        Expections: [Rambla.Exception]
+      ]
     ]
   end
 end
