@@ -16,6 +16,7 @@ jobs:
         ports:
         - 5672/tcp
         env:
+          RABBITMQ_PORT: ${{ job.services.rabbitmq.ports['5672'] }}
           RABBITMQ_USER: guest
           RABBITMQ_PASSWORD: guest
           RABBITMQ_VHOST: "/"
@@ -23,6 +24,8 @@ jobs:
         image: redis
         ports:
         - 6379/tcp
+        env:
+          REDIS_PORT: ${{ job.services.redis.ports['6379'] }}
 
     steps:
     - uses: actions/checkout@v1
