@@ -1,3 +1,4 @@
 import Config
 
-import_config "#{Mix.env()}.exs"
+if File.exists?(Path.join("config", "#{Mix.env()}.exs")),
+  do: import_config("#{Mix.env()}.exs")

@@ -1,6 +1,6 @@
-name: Elixir CI
+name: Rambla CI
 
-on: push
+on: [push, pull_request]
 
 jobs:
   build:
@@ -32,6 +32,7 @@ jobs:
         MIX_ENV=ci mix local.hex --force
         MIX_ENV=ci mix deps.get
     - name: Run All Tests
+      run: MIX_ENV=ci mix quality
       run: MIX_ENV=ci mix test
       env:
         RABBITMQ_HOST: rabbitmq

@@ -57,8 +57,8 @@ defmodule Rambla.MixProject do
       {:envio, "~> 0.4", optional: true},
 
       # dev, test
-      {:credo, "~> 1.0", only: [:dev, :test], runtime: false},
-      {:dialyxir, "~> 1.0.0-rc.6", only: [:dev, :test], runtime: false},
+      {:credo, "~> 1.0", only: [:dev, :ci], runtime: false},
+      {:dialyxir, "~> 1.0.0-rc.6", only: [:dev, :ci], runtime: false},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
     ]
   end
