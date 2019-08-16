@@ -1,4 +1,4 @@
-name: Rambla CI
+name: Test
 
 on: [push, pull_request]
 

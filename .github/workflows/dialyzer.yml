@@ -1,4 +1,4 @@
-name: Rambla CI
+name: Dialyzer
 
 on:
   schedule:
