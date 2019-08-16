@@ -14,7 +14,7 @@ jobs:
       rabbitmq:
         image: rabbitmq
         ports:
-        - 5672:5672
+        - 5672
         env:
           RABBIT_PORT: 5672
           RABBITMQ_USER: guest
@@ -23,7 +23,7 @@ jobs:
       redis:
         image: redis
         ports:
-        - 6379:6372
+        - 6379
         env:
           REDIS_PORT: 6379
 
@@ -34,5 +34,8 @@ jobs:
         MIX_ENV=ci mix local.rebar --force
         MIX_ENV=ci mix local.hex --force
         MIX_ENV=ci mix deps.get
+      env:
+        REDIS_PORT: ${{ job.services.redis.ports['6379'] }}
+        RABBITMQ_PORT: ${{ job.services.rabbitmq.ports['5672'] }}
     - name: Run All Tests
       run: MIX_ENV=ci mix test
