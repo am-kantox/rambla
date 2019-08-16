@@ -8,26 +8,9 @@ defmodule RamblaTest do
        [
          options: [size: 5, max_overflow: 300],
          type: :local,
-         params: [
-           host: "localhost",
-           password: "guest",
-           port: 5672,
-           username: "guest",
-           virtual_host: "/",
-           x_message_ttl: "4000"
-         ]
+         params: IO.inspect(Application.fetch_env!(:rambla, :rabbitmq), label: "rabbitmq")
        ]},
-      {Rambla.Redis,
-       [
-         params: [
-           host: "127.0.0.1",
-           port: 6379,
-           password: "",
-           db: 0,
-           reconnect: 1_000,
-           max_queue: :infinity
-         ]
-       ]}
+      {Rambla.Redis, params: IO.inspect(Application.fetch_env!(:rambla, :redis), label: "redis")}
     ]
 
     [ok: _, ok: _] = Rambla.ConnectionPool.start_pools(opts)
