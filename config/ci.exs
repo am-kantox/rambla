@@ -2,7 +2,7 @@ import Config
 
 config :rambla,
   redis: [
-    host: "127.0.0.1",
+    host: System.get_env("REDIS_HOST"),
     port: String.to_integer(System.get_env("REDIS_PORT")),
     password: "",
     db: 0,
@@ -10,7 +10,7 @@ config :rambla,
     max_queue: :infinity
   ],
   rabbitmq: [
-    host: "localhost",
+    host: System.get_env("RABBITMQ_HOST"),
     password: "guest",
     port: String.to_integer(System.get_env("RABBITMQ_PORT")),
     username: "guest",
