@@ -32,8 +32,9 @@ jobs:
         MIX_ENV=ci mix local.hex --force
         MIX_ENV=ci mix deps.get
     - name: Run All Tests
-      run: MIX_ENV=ci mix quality
-      run: MIX_ENV=ci mix test
+      run: |
+        MIX_ENV=ci mix quality
+        MIX_ENV=ci mix test
       env:
         RABBITMQ_HOST: rabbitmq
         RABBITMQ_PORT: ${{ job.services.rabbitmq.ports[5672] }}
