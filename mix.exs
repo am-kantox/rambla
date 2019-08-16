@@ -51,10 +51,10 @@ defmodule Rambla.MixProject do
   defp deps do
     [
       {:jason, "~> 1.0"},
-      {:amqp, "~> 1.2"},
-      {:exredis, "~> 0.3"},
       {:poolboy, "~> 1.5"},
-      {:envio, "~> 0.4"},
+      {:amqp, "~> 1.2", optional: true},
+      {:exredis, "~> 0.3", optional: true},
+      {:envio, "~> 0.4", optional: true},
 
       # dev, test
       {:credo, "~> 1.0", only: [:dev, :test], runtime: false},

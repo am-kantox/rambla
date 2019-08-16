@@ -9,6 +9,7 @@ jobs:
 
     container:
       image: elixir:1.9.1-slim
+      image: rabbitmq
 
     steps:
     - uses: actions/checkout@v1
