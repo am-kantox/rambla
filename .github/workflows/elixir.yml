@@ -33,6 +33,6 @@ jobs:
         MIX_ENV=ci mix deps.get
       env:
         RABBITMQ_PORT: ${{ job.build.services.rabbitmq.ports }}
-        REDIS_PORT: ${{ job.build.services.redis.ports['6379'] }}
+        REDIS_PORT: ${{ job.build.services.redis.ports }}
     - name: Run All Tests
       run: MIX_ENV=ci mix test
