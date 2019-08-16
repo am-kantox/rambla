@@ -8,9 +8,9 @@ defmodule RamblaTest do
        [
          options: [size: 5, max_overflow: 300],
          type: :local,
-         params: IO.inspect(Application.fetch_env!(:rambla, :rabbitmq), label: "rabbitmq")
+         params: Application.fetch_env!(:rambla, :rabbitmq)
        ]},
-      {Rambla.Redis, params: IO.inspect(Application.fetch_env!(:rambla, :redis), label: "redis")}
+      {Rambla.Redis, params: Application.fetch_env!(:rambla, :redis)
     ]
 
     [ok: _, ok: _] = Rambla.ConnectionPool.start_pools(opts)
