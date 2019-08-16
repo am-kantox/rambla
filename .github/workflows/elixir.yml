@@ -9,7 +9,20 @@ jobs:
 
     container:
       image: elixir:1.9.1-slim
-      image: rabbitmq
+
+    services:
+      rabbitmq:
+        image: rabbitmq
+        ports:
+        - 5672
+        env:
+          RABBITMQ_USER: guest
+          RABBITMQ_PASSWORD: guest
+          RABBITMQ_VHOST: "/"
+      redis:
+        image: redis
+        ports:
+        - 6379/tcp
 
     steps:
     - uses: actions/checkout@v1
