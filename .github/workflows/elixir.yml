@@ -14,7 +14,7 @@ jobs:
       rabbitmq:
         image: rabbitmq
         ports:
-        - 5672/tcp
+        - 5672:5672
         env:
           RABBITMQ_USER: guest
           RABBITMQ_PASSWORD: guest
@@ -22,7 +22,7 @@ jobs:
       redis:
         image: redis
         ports:
-        - 6379/tcp
+        - 6379:6379
 
     steps:
     - uses: actions/checkout@v1
@@ -32,7 +32,7 @@ jobs:
         MIX_ENV=ci mix local.hex --force
         MIX_ENV=ci mix deps.get
       env:
-        RABBITMQ_PORT: ${{ job.build.services.rabbitmq }}
-        REDIS_PORT: ${{ job.build.services.redis }}
+        RABBITMQ_PORT: ${{ job.build.services.rabbitmq.ports[5672] }}
+        REDIS_PORT: ${{ job.build.services.redis.ports[6379] }}
     - name: Run All Tests
       run: MIX_ENV=ci mix test
