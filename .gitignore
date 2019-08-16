@@ -26,6 +26,4 @@ rambla-*.tar
 
 /.elixir_ls/
 
-/.dialyzer/plts/
-
 
