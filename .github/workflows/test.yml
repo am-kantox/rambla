@@ -6,7 +6,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     container:
-      image: elixir:1.9.1-slim
+      image: elixir:1.9.4-slim
     services:
       rabbitmq:
         image: rabbitmq
@@ -21,7 +21,7 @@ jobs:
         ports:
         - 6379:6379
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
     - name: Install Dependencies
       run: |
         MIX_ENV=ci mix local.rebar --force
