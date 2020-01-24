@@ -13,12 +13,12 @@ jobs:
         otp: [21.3, 22.2]
         elixir: [1.9.4]
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-elixir@v1
-        with:
-          otp-version: ${{matrix.otp}}
-          elixir-version: ${{matrix.elixir}}
-      - run: |
+    - uses: actions/checkout@v2
+    - uses: actions/setup-elixir@v1
+      with:
+        otp-version: ${{matrix.otp}}
+        elixir-version: ${{matrix.elixir}}
+    - run: |
         MIX_ENV=ci epmd -daemon
         MIX_ENV=ci mix deps.get
         MIX_ENV=ci mix quality.ci
