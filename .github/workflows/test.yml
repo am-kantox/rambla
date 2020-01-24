@@ -29,11 +29,9 @@ jobs:
         with:
           otp-version: ${{matrix.otp}}
           elixir-version: ${{matrix.elixir}}
-      - name: Run All Tests
-        run: |
-          MIX_ENV=ci epmd -daemon
-          MIX_ENV=ci mix deps.get
-          MIX_ENV=ci mix test
+      - run: MIX_ENV=ci epmd -daemon
+      - run: MIX_ENV=ci mix deps.get
+      - run: MIX_ENV=ci mix test
         env:
           RABBITMQ_HOST: rabbitmq
           RABBITMQ_PORT: ${{ job.services.rabbitmq.ports[5672] }}
