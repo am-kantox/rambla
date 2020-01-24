@@ -29,12 +29,13 @@ jobs:
         with:
           otp-version: ${{matrix.otp}}
           elixir-version: ${{matrix.elixir}}
-      - run: |
-        MIX_ENV=ci epmd -daemon |
-        MIX_ENV=ci mix deps.get |
-        MIX_ENV=ci mix test
-      env:
-        RABBITMQ_HOST: rabbitmq
-        RABBITMQ_PORT: ${{ job.services.rabbitmq.ports[5672] }}
-        REDIS_HOST: redis
-        REDIS_PORT: ${{ job.services.redis.ports[6379] }}
+      - name: Run All Tests
+        run: |
+          MIX_ENV=ci epmd -daemon
+          MIX_ENV=ci mix deps.get
+          MIX_ENV=ci mix test
+        env:
+          RABBITMQ_HOST: rabbitmq
+          RABBITMQ_PORT: ${{ job.services.rabbitmq.ports[5672] }}
+          REDIS_HOST: redis
+          REDIS_PORT: ${{ job.services.redis.ports[6379] }}
