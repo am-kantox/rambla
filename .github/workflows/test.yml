@@ -5,11 +5,8 @@ on: [push, pull_request]
 jobs:
   test:
     runs-on: ubuntu-latest
-    name: OTP ${{matrix.otp}} / Elixir ${{matrix.elixir}}
-    strategy:
-      matrix:
-        otp: [21.3, 22.2]
-        elixir: [1.9.4]
+    container:
+      image: elixir:1.9.1-slim
     services:
       rabbitmq:
         image: rabbitmq
@@ -25,10 +22,6 @@ jobs:
         - 6379:6379
     steps:
     - uses: actions/checkout@v1
-    - uses: actions/setup-elixir@v1
-      with:
-        otp-version: ${{matrix.otp}}
-        elixir-version: ${{matrix.elixir}}
     - name: Install Dependencies
       run: |
         MIX_ENV=ci mix local.rebar --force
