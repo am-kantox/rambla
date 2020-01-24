@@ -25,6 +25,10 @@ jobs:
         - 6379:6379
     steps:
     - uses: actions/checkout@v1
+    - uses: actions/setup-elixir@v1
+      with:
+        otp-version: ${{matrix.otp}}
+        elixir-version: ${{matrix.elixir}}
     - name: Install Dependencies
       run: |
         MIX_ENV=ci mix local.rebar --force
