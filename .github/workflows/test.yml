@@ -26,6 +26,9 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - uses: actions/setup-elixir@v1
+      with:
+        otp-version: ${{matrix.otp}}
+        elixir-version: ${{matrix.elixir}}
     - name: Install Dependencies
       run: |
         mix local.rebar --force
