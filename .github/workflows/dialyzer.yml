@@ -18,6 +18,7 @@ jobs:
         with:
           otp-version: ${{matrix.otp}}
           elixir-version: ${{matrix.elixir}}
-      - run: MIX_ENV=ci epmd -daemon
-      - run: MIX_ENV=ci mix deps.get
-      - run: MIX_ENV=ci mix quality.ci
+      - run: |
+        MIX_ENV=ci epmd -daemon
+        MIX_ENV=ci mix deps.get
+        MIX_ENV=ci mix quality.ci
