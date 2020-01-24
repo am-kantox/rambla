@@ -30,8 +30,8 @@ jobs:
           otp-version: ${{matrix.otp}}
           elixir-version: ${{matrix.elixir}}
       - run: |
-        MIX_ENV=ci epmd -daemon
-        MIX_ENV=ci mix deps.get
+        MIX_ENV=ci epmd -daemon |
+        MIX_ENV=ci mix deps.get |
         MIX_ENV=ci mix test
       env:
         RABBITMQ_HOST: rabbitmq
