@@ -35,7 +35,6 @@ jobs:
         MIX_ENV=ci mix test
       env:
         RABBITMQ_HOST: rabbitmq
-        RABBITMQ_HOST: rabbitmq
         RABBITMQ_PORT: ${{ job.services.rabbitmq.ports[5672] }}
         REDIS_HOST: redis
         REDIS_PORT: ${{ job.services.redis.ports[6379] }}
