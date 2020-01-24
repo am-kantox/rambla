@@ -24,16 +24,18 @@ jobs:
         ports:
         - 6379:6379
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-elixir@v1
-        with:
-          otp-version: ${{matrix.otp}}
-          elixir-version: ${{matrix.elixir}}
-      - run: MIX_ENV=ci epmd -daemon
-      - run: MIX_ENV=ci mix deps.get
-      - run: MIX_ENV=ci mix test
-        env:
-          RABBITMQ_HOST: rabbitmq
-          RABBITMQ_PORT: ${{job.services.rabbitmq.ports[5672]}}
-          REDIS_HOST: redis
-          REDIS_PORT: ${{job.services.redis.ports[6379]}}
+    - uses: actions/checkout@v1
+    - name: Install Dependencies
+      run: |
+        MIX_ENV=ci mix local.rebar --force
+        MIX_ENV=ci mix local.hex --force
+        MIX_ENV=ci mix deps.get
+    - name: Run All Tests
+      run: |
+        MIX_ENV=ci mix test
+      env:
+        RABBITMQ_HOST: rabbitmq
+        RABBITMQ_HOST: rabbitmq
+        RABBITMQ_PORT: ${{ job.services.rabbitmq.ports[5672] }}
+        REDIS_HOST: redis
+        REDIS_PORT: ${{ job.services.redis.ports[6379] }}
