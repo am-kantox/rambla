@@ -15,10 +15,6 @@ jobs:
         image: rabbitmq
         ports:
         - 5672:5672
-        env:
-          RABBITMQ_USER: guest
-          RABBITMQ_PASSWORD: guest
-          RABBITMQ_VHOST: "/"
       redis:
         image: redis
         ports:
@@ -40,5 +36,8 @@ jobs:
       env:
         RABBITMQ_HOST: localhost
         RABBITMQ_PORT: ${{job.services.rabbitmq.ports[5672]}}
+        RABBITMQ_USERNAME: guest
+        RABBITMQ_PASSWORD: guest
+        RABBITMQ_VHOST: "/"
         REDIS_HOST: localhost
         REDIS_PORT: ${{job.services.redis.ports[6379]}}
