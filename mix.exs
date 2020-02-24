@@ -53,9 +53,12 @@ defmodule Rambla.MixProject do
     [
       {:jason, "~> 1.0"},
       {:poolboy, "~> 1.5"},
+
+      # optional backends
       {:amqp, "~> 1.2", optional: true},
       {:exredis, "~> 0.3", optional: true},
       {:envio, "~> 0.4", optional: true},
+      {:gen_smtp, "~> 0.15"},
 
       # dev, test
       {:credo, "~> 1.0", only: [:dev, :ci], runtime: false},

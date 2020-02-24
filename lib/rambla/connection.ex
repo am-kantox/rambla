@@ -93,7 +93,9 @@ defmodule Rambla.Connection do
         _,
         %Rambla.Connection{conn: conn, conn_type: conn_type} = state
       ),
-      do: {:reply, conn_type.publish(Map.put(conn, :opts, opts), message), state}
+      do:
+        {:reply, conn_type.publish(Map.update(conn, :opts, opts, &Map.merge(&1, opts)), message),
+         state}
 
   @impl GenServer
   def handle_call(:conn, _, %Rambla.Connection{} = state),

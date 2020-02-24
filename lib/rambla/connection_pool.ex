@@ -28,6 +28,22 @@ defmodule Rambla.ConnectionPool do
   @impl DynamicSupervisor
   def init(opts), do: DynamicSupervisor.init(Keyword.put_new(opts, :strategy, :one_for_one))
 
+  @spec start_pools() :: [DynamicSupervisor.on_start_child()]
+  def start_pools() do
+    pools =
+      for {k, v} <- Application.get_env(:rambla, :pools, []) do
+        k =
+          case to_string(k) do
+            "Elixir." <> _ -> {k, params: v}
+            short_name -> Module.concat("Rambla", Macro.camelize(short_name))
+          end
+
+        {k, params: v}
+      end
+
+    start_pools(pools)
+  end
+
   @spec start_pools(%{required(atom()) => keyword()}) :: [DynamicSupervisor.on_start_child()]
   def start_pools(opts) do
     Enum.map(opts, fn {type, opts} ->
@@ -51,9 +67,9 @@ defmodule Rambla.ConnectionPool do
   @spec pools :: [{:undefined, pid() | :restarting, :worker | :supervisor, [:poolboy]}]
   def pools, do: DynamicSupervisor.which_children(Rambla.ConnectionPool)
 
-  @spec publish(type :: atom(), message :: map(), opts :: keyword()) ::
+  @spec publish(type :: atom(), message :: map(), opts :: map()) ::
           Rambla.Connection.outcome()
-  def publish(type, %{} = message, opts \\ []) do
+  def publish(type, %{} = message, opts \\ %{}) do
     response = :poolboy.transaction(type, &GenServer.call(&1, {:publish, message, opts}))
     broadcast(type, %{message: message, response: response})
     response
