@@ -2,7 +2,7 @@ defmodule Rambla.MixProject do
   use Mix.Project
 
   @app :rambla
-  @version "0.2.1"
+  @version "0.3.0"
   System.put_env("MIX_LOADED_APP", to_string(@app))
 
   def project do
@@ -86,7 +86,7 @@ defmodule Rambla.MixProject do
       logo: "stuff/logo-48x48.png",
       extras: ["README.md"],
       groups_for_modules: [
-        Backends: [Rambla.Amqp, Rambla.Redis],
+        Backends: [Rambla.Amqp, Rambla.Redis, Rambla.Smtp],
         Expections: [Rambla.Exception]
       ]
     ]

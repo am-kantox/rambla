@@ -1,16 +1,5 @@
 defmodule Rambla.ConnectionPool do
-  @moduledoc """
-  The dynamic supervisor for connection pools.
-
-  Use `Rambla.ConnectionPool.start_pools/1` to add pools dynamically. It expects
-  a keyword list of pools to add, each declared with the name of the worker _and_
-  the options with the following keys:
-
-  - `:type` the type of the worker; defaults to `:local`
-  - `:name` the name of the worker; defaults to the module name
-  - `:options` options to be passed to the worker initialization in `:poolboy`, like `[size: 5, max_overflow: 300]`
-  - `:params` arguments to be passed to the worker during initialization
-  """
+  @moduledoc false
   use DynamicSupervisor
 
   @notify_broadcast Application.get_env(:rambla, :notify_broadcast, true)
@@ -30,21 +19,14 @@ defmodule Rambla.ConnectionPool do
 
   @spec start_pools() :: [DynamicSupervisor.on_start_child()]
   def start_pools() do
-    pools =
-      for {k, v} <- Application.get_env(:rambla, :pools, []) do
-        k =
-          case to_string(k) do
-            "Elixir." <> _ -> {k, params: v}
-            short_name -> Module.concat("Rambla", Macro.camelize(short_name))
-          end
-
-        {k, params: v}
-      end
-
-    start_pools(pools)
+    start_pools(
+      for {k, v} <- Application.get_env(:rambla, :pools, []), do: {fix_type(k), params: v}
+    )
   end
 
-  @spec start_pools(%{required(atom()) => keyword()}) :: [DynamicSupervisor.on_start_child()]
+  @spec start_pools(%{required(atom()) => keyword()} | keyword()) :: [
+          DynamicSupervisor.on_start_child()
+        ]
   def start_pools(opts) do
     Enum.map(opts, fn {type, opts} ->
       with {options, opts} <- Keyword.pop(opts, :options, []),
@@ -70,6 +52,8 @@ defmodule Rambla.ConnectionPool do
   @spec publish(type :: atom(), message :: map(), opts :: map()) ::
           Rambla.Connection.outcome()
   def publish(type, %{} = message, opts \\ %{}) do
+    type = fix_type(type)
+
     response = :poolboy.transaction(type, &GenServer.call(&1, {:publish, message, opts}))
     broadcast(type, %{message: message, response: response})
     response
@@ -77,5 +61,15 @@ defmodule Rambla.ConnectionPool do
 
   @spec conn(type :: atom()) :: any()
   def conn(type),
-    do: :poolboy.transaction(type, &GenServer.call(&1, :conn))
+    do: type |> fix_type() |> :poolboy.transaction(&GenServer.call(&1, :conn))
+
+  @spec fix_type(k :: binary() | atom()) :: module()
+  defp fix_type(k) when is_binary(k), do: String.to_existing_atom(k)
+
+  defp fix_type(k) when is_atom(k) do
+    case to_string(k) do
+      "Elixir." <> _ -> k
+      short_name -> Module.concat("Rambla", Macro.camelize(short_name))
+    end
+  end
 end

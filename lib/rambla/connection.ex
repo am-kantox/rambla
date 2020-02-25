@@ -43,9 +43,11 @@ defmodule Rambla.Connection do
         conn_params: opts
       })
 
+  @doc false
   @impl GenServer
   def init(%Rambla.Connection{} = conn), do: {:ok, conn, {:continue, :start}}
 
+  @doc false
   @impl GenServer
   def handle_continue(
         :start,
@@ -54,14 +56,14 @@ defmodule Rambla.Connection do
     case conn_type.connect(conn_params) do
       %Rambla.Connection{conn: conn, conn_pid: pid, errors: []} = state when not is_nil(conn) ->
         if is_nil(pid),
-          do: Logger.warn("[🐰] No PID returned from connection. Monitoring is disabled."),
+          do: Logger.warn("[🖇️] No PID returned from connection. Monitoring is disabled."),
           else: Process.monitor(pid)
 
         {:noreply, state}
 
       state ->
         Logger.error("""
-        [🐰] Failed to connect with params #{inspect(conn_params)}.
+        [🖇️] Failed to connect with params #{inspect(conn_params)}.
             State: #{inspect(state)}.
             Retrying...
         """)
@@ -71,18 +73,7 @@ defmodule Rambla.Connection do
     end
   end
 
-  @doc """
-  Publishes a message to the connection established.
-
-  Expects the following options to be passed:
-
-      %{
-        queue: "queue-name",
-        exchange: "exchange-name"
-      }
-
-  Returns `{:ok, response}` or `{:error, reason}`.
-  """
+  @doc false
   @impl GenServer
   def handle_call({:publish, message, opts}, _, %Rambla.Connection{conn: nil} = state),
     do: {:reply, {:error, {:no_connection, {message, opts}}}, state}
@@ -97,6 +88,7 @@ defmodule Rambla.Connection do
         {:reply, conn_type.publish(Map.update(conn, :opts, opts, &Map.merge(&1, opts)), message),
          state}
 
+  @doc false
   @impl GenServer
   def handle_call(:conn, _, %Rambla.Connection{} = state),
     do: {:reply, state, state}

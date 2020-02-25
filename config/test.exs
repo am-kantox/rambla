@@ -21,7 +21,7 @@ config :rambla,
          ]
        ] ++
          [
-           {:smtp,
+           {Rambla.Smtp,
             [
               # the smtp relay, e.g. "smtp.gmail.com"
               relay: System.get_env("RAMBLA_SMTP_RELAY", "smtp.gmail.com"),
@@ -49,6 +49,6 @@ config :rambla,
               # how many retries per smtp host on temporary failure,
               #   Defaults to 1, which means it will retry once if there is a failure.
               retries: 3,
-              from: ["matiouchkine@gmail.com"]
+              from: %{"Aleksei Matiushkin" => "matiouchkine@gmail.com"}
             ]}
          ]
