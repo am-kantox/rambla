@@ -24,7 +24,7 @@ defmodule Rambla.Connection do
   @doc "Connects to the remote service and returns a connection object back"
   @callback connect(params :: keyword()) :: t()
   @doc "Publishes the message to the remote service using connection provided"
-  @callback publish(conn :: any(), message :: map()) :: outcome()
+  @callback publish(conn :: any(), message :: binary() | map()) :: outcome()
 
   ##############################################################################
 
@@ -80,10 +80,11 @@ defmodule Rambla.Connection do
 
   @impl GenServer
   def handle_call(
-        {:publish, %{} = message, opts},
+        {:publish, message, opts},
         _,
         %Rambla.Connection{conn: conn, conn_type: conn_type} = state
-      ),
+      )
+      when is_map(message) or is_binary(message),
       do:
         {:reply, conn_type.publish(Map.update(conn, :opts, opts, &Map.merge(&1, opts)), message),
          state}

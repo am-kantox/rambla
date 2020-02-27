@@ -17,8 +17,8 @@ defmodule Rambla.ConnectionPool do
   @impl DynamicSupervisor
   def init(opts), do: DynamicSupervisor.init(Keyword.put_new(opts, :strategy, :one_for_one))
 
-  @spec start_pools() :: [DynamicSupervisor.on_start_child()]
-  def start_pools() do
+  @spec start_pools :: [DynamicSupervisor.on_start_child()]
+  def start_pools do
     start_pools(
       for {k, v} <- Application.get_env(:rambla, :pools, []), do: {fix_type(k), params: v}
     )
@@ -49,9 +49,9 @@ defmodule Rambla.ConnectionPool do
   @spec pools :: [{:undefined, pid() | :restarting, :worker | :supervisor, [:poolboy]}]
   def pools, do: DynamicSupervisor.which_children(Rambla.ConnectionPool)
 
-  @spec publish(type :: atom(), message :: map(), opts :: map()) ::
+  @spec publish(type :: atom(), message :: binary() | map(), opts :: map()) ::
           Rambla.Connection.outcome()
-  def publish(type, %{} = message, opts \\ %{}) do
+  def publish(type, message, opts \\ %{}) when is_map(message) or is_binary(message) do
     type = fix_type(type)
 
     response = :poolboy.transaction(type, &GenServer.call(&1, {:publish, message, opts}))

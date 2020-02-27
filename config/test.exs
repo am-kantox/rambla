@@ -13,11 +13,15 @@ config :rambla,
          ],
          amqp: [
            host: System.get_env("RABBITMQ_HOST", "127.0.0.1"),
-           password: System.get_env("RABBITMQ_PASSWORD", "guest"),
            port: String.to_integer(System.get_env("RABBITMQ_PORT", "5672")),
            username: System.get_env("RABBITMQ_USERNAME", "guest"),
+           password: System.get_env("RABBITMQ_PASSWORD", "guest"),
            virtual_host: System.get_env("RABBITMQ_VHOST", "/"),
            x_message_ttl: "4000"
+         ],
+         http: [
+           host: System.get_env("RAMBLA_HTTP_HOST", "127.0.0.1"),
+           port: String.to_integer(System.get_env("RAMBLA_HTTP_PORT", "80"))
          ]
        ] ++
          [

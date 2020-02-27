@@ -10,10 +10,11 @@ defmodule RamblaTest do
          type: :local,
          params: Application.fetch_env!(:rambla, :pools)[:amqp]
        ]},
-      {Rambla.Redis, params: Application.fetch_env!(:rambla, :pools)[:redis]}
+      {Rambla.Redis, params: Application.fetch_env!(:rambla, :pools)[:redis]},
+      {Rambla.Http, params: Application.fetch_env!(:rambla, :pools)[:http]}
     ]
 
-    [ok: _, ok: _] = Rambla.ConnectionPool.start_pools(opts)
+    [ok: _, ok: _, ok: _] = Rambla.ConnectionPool.start_pools(opts)
     {:ok, _pid} = Rambla.Support.Subscriber.start_link()
 
     :ok

@@ -30,7 +30,7 @@ defmodule Rambla.MixProject do
   def application do
     [
       extra_applications: [:logger, :poolboy, :envio],
-      mod: {Rambla.Application, []}
+      mod: {Rambla.Application, [:inets, :ssl]}
     ]
   end
 
@@ -53,6 +53,7 @@ defmodule Rambla.MixProject do
     [
       {:jason, "~> 1.0"},
       {:poolboy, "~> 1.5"},
+      {:plug, "~> 1.9"},
 
       # optional backends
       {:amqp, "~> 1.2", optional: true},
