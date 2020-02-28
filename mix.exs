@@ -2,7 +2,7 @@ defmodule Rambla.MixProject do
   use Mix.Project
 
   @app :rambla
-  @version "0.3.0"
+  @version "0.4.0"
   System.put_env("MIX_LOADED_APP", to_string(@app))
 
   def project do
@@ -21,7 +21,7 @@ defmodule Rambla.MixProject do
       docs: docs(),
       dialyzer: [
         plt_file: {:no_warn, ".dialyzer/plts/dialyzer.plt"},
-        plt_add_apps: [:amqp, :exredis],
+        plt_add_apps: [:amqp, :exredis, :httpc, :inets, :ssl],
         ignore_warnings: ".dialyzer/ignore.exs"
       ]
     ]
@@ -29,8 +29,8 @@ defmodule Rambla.MixProject do
 
   def application do
     [
-      extra_applications: [:logger, :poolboy, :envio],
-      mod: {Rambla.Application, [:inets, :ssl]}
+      extra_applications: [:logger, :poolboy, :envio, :inets, :ssl],
+      mod: {Rambla.Application, []}
     ]
   end
 

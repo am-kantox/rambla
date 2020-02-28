@@ -17,6 +17,11 @@ defmodule Rambla.Http do
 
   If the second argument `message` is `binary()` it’s treated as an URL _and_
   `:get` is implied.
+
+  ---
+
+  List of all possible options might be found in
+  [`:httpc.request/4`](http://erlang.org/doc/man/httpc.html#request-4), names are preserved.
   """
   @behaviour Rambla.Connection
 
@@ -60,10 +65,14 @@ defmodule Rambla.Http do
   def publish(%{conn: _conn, opts: opts, defaults: defaults}, message)
       when is_map(opts) and is_map(message) do
     {method, message} = Map.pop(message, :method, :get)
+
     {host, message} = Map.pop(message, :host, Map.get(defaults, :host))
     {port, message} = Map.pop(message, :port, Map.get(defaults, :port))
     {headers, message} = Map.pop(message, :headers, Map.get(defaults, :headers, []))
+
     {path, message} = Map.pop(message, :path, Map.get(opts, :path, ""))
+    {http_options, message} = Map.pop(message, :http_options, Map.get(opts, :http_options, []))
+    {options, message} = Map.pop(message, :options, Map.get(opts, :options, []))
     {%{} = query, message} = Map.pop(message, :query, Map.get(opts, :query, %{}))
     {body, _message} = Map.pop(message, :body, Map.get(opts, :body, %{}))
 
@@ -83,31 +92,71 @@ defmodule Rambla.Http do
       |> Enum.reject(&(&1 == ""))
       |> Enum.join("/")
 
-    request(method, url, headers, body)
+    request(method, url, headers, body, http_options, options)
   end
 
+  @typep method :: :head | :get | :put | :post | :trace | :options | :delete | :patch
+  @typep url :: binary()
+  @typep header :: {binary(), binary()}
+  @typep headers :: [header()]
+  @typep body :: charlist() | binary()
+
+  @typep option ::
+           {:sync, boolean()}
+           | {:stream, any()}
+           | {:body_format, any()}
+           | {:full_result, boolean()}
+           | {:headers_as_is, boolean()}
+           | {:socket_opts, any()}
+           | {:receiver, any()}
+           | {:ipv6_host_with_brackets, boolean()}
+  @typep options :: [option()]
+  @typep http_option ::
+           {:timeout, timeout()}
+           | {:connect_timeout, timeout()}
+           | {:ssl, any()}
+           | {:essl, any()}
+           | {:autoredirect, boolean()}
+           | {:proxy_auth, {charlist(), charlist()}}
+           | {:version, charlist()}
+           | {:relaxed, boolean()}
+  @typep http_options :: [http_option()]
+
+  @typep content_type :: charlist()
+  @typep status_line :: {charlist(), integer(), charlist()}
+
   @spec request(
-          method :: :httpc.method(),
-          url :: :httpc.url(),
-          headers :: :httpc.headers(),
-          body :: :httpc.body(),
-          content_type :: :httpc.content_type()
-        ) :: {:ok, {:httpc.status_line(), list()}} | {:error, any()}
-  defp request(method, url, headers, body \\ "", content_type \\ 'application/json')
+          method :: method(),
+          url :: url(),
+          headers :: headers(),
+          body :: body(),
+          http_options :: http_options(),
+          options :: options(),
+          content_type :: content_type()
+        ) :: {:ok, {status_line(), list()}} | {:error, any()}
+  defp request(
+         method,
+         url,
+         headers,
+         body \\ "",
+         http_options \\ [],
+         options \\ [],
+         content_type \\ 'application/json'
+       )
 
   Enum.each([:post, :put], fn m ->
-    defp request(unquote(m), url, headers, body, content_type),
+    defp request(unquote(m), url, headers, body, http_options, options, content_type),
       do:
         :httpc.request(
           unquote(m),
           {to_charlist(url), headers, :erlang.binary_to_list(Jason.encode!(body)), content_type},
-          [],
-          []
+          http_options,
+          options
         )
   end)
 
   Enum.each([:get, :head, :options, :delete], fn m ->
-    defp request(unquote(m), url, headers, _body, _content_type),
-      do: :httpc.request(unquote(m), {to_charlist(url), headers}, [], [])
+    defp request(unquote(m), url, headers, _body, http_options, options, _content_type),
+      do: :httpc.request(unquote(m), {to_charlist(url), headers}, http_options, options)
   end)
 end
