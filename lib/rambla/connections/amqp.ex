@@ -1,6 +1,17 @@
 defmodule Rambla.Amqp do
   @moduledoc """
   Default connection implementation for 🐰 Rabbit.
+
+  `publish/2` accepts the following options:
+
+  - `exchange` [`binary()`, **mandatory**] the exchange to publish to
+  - `declare?`[`boolean()`, **optional**, _default_: `true`] if false
+    is passed, the exchange would not be declared; use it if the exchange
+    already surely exists to speed up the publishing
+  - `routing_key` [`binary()`, **optional**, _default_: `""`] if passed,
+    used as a routing key
+  - `options` [`keyword()`, **optional**, _default_: `[]`] the options
+    to be passe as is to call to `AMQP.Basic.publish/5`
   """
   @behaviour Rambla.Connection
 
@@ -43,11 +54,9 @@ defmodule Rambla.Amqp do
   @impl Rambla.Connection
   def publish(%{conn: _conn, chan: chan, opts: opts}, message)
       when is_map(opts) and is_map(message) do
-    with %{queue: queue, exchange: exchange} <- opts,
-         {:ok, %{consumer_count: _, message_count: _, queue: ^queue}} <-
-           AMQP.Queue.declare(chan, queue),
-         :ok <- AMQP.Exchange.declare(chan, exchange),
-         :ok <- AMQP.Queue.bind(chan, queue, exchange),
+    with %{exchange: exchange} <- opts,
+         declare? <- Map.get(opts, :declare?, true),
+         if(declare?, do: AMQP.Exchange.declare(chan, exchange)),
          :ok <-
            AMQP.Basic.publish(
              chan,
