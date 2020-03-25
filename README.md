@@ -24,6 +24,12 @@ end
 
 - AWS
 
+## Changelog
+
+-  **`0.5.0`** bulk publisher
+-  **`0.4.0`** `SMTP` publisher
+-  **`0.3.0`** `HTTP` publisher
+
 ## Documentation
 
 - [https://hexdocs.pm/rambla](https://hexdocs.pm/rambla).
