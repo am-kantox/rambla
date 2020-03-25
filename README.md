@@ -26,6 +26,7 @@ end
 
 ## Changelog
 
+-  **`0.5.1`** performance fixes, do not require `queue` in call to Rabbit `publish/2`, `declare?: false` to not declare exchange every time
 -  **`0.5.0`** bulk publisher
 -  **`0.4.0`** `SMTP` publisher
 -  **`0.3.0`** `HTTP` publisher
