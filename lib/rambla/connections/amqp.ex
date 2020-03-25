@@ -5,6 +5,9 @@ defmodule Rambla.Amqp do
   `publish/2` accepts the following options:
 
   - `exchange` [`binary()`, **mandatory**] the exchange to publish to
+  - `queue` [`binary()`, **optional**] if passed, the queue will be created
+    and bound to the exchange; it’s slowing down publishing, but safer
+    for the cold RebbatMQ installation
   - `declare?`[`boolean()`, **optional**, _default_: `true`] if false
     is passed, the exchange would not be declared; use it if the exchange
     already surely exists to speed up the publishing
@@ -57,6 +60,7 @@ defmodule Rambla.Amqp do
     with %{exchange: exchange} <- opts,
          declare? <- Map.get(opts, :declare?, true),
          if(declare?, do: AMQP.Exchange.declare(chan, exchange)),
+         :ok <- queue!(chan, opts),
          :ok <-
            AMQP.Basic.publish(
              chan,
@@ -70,4 +74,13 @@ defmodule Rambla.Amqp do
       error -> {:error, error}
     end
   end
+
+  @spec queue!(chan :: AMQP.Channel.t(), map()) :: :ok
+  defp queue!(chan, %{queue: queue, exchange: exchange}) do
+    with {:ok, %{consumer_count: _, message_count: _, queue: ^queue}} <-
+           AMQP.Queue.declare(chan, queue),
+         do: AMQP.Queue.bind(chan, queue, exchange)
+  end
+
+  defp queue!(_, %{exchange: _exchange}), do: :ok
 end
