@@ -56,7 +56,7 @@ defmodule Rambla.Amqp do
              Jason.encode!(message),
              Map.get(opts, :options, [])
            ) do
-      {:ok, :published}
+      {:ok, message}
     else
       error -> {:error, error}
     end

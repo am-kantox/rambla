@@ -5,26 +5,46 @@ defmodule Rambla.Connection do
   publishes messages as needed.
   """
 
-  @typedoc "The response type; contains a status and a response from remote service"
+  @typedoc """
+  The response type for the single request.
+  Contains a status and a response from remote service
+  """
   @type outcome :: {:ok | :error, Rambla.Exception.t() | any()}
+
+  @typedoc """
+  The response type for the bulk request.
+  Contains a status and a response from remote service
+  """
+  @type outcomes :: %{oks: [any()], errors: [Rambla.Exception.t()]}
+
+  @typedoc "The accepted type of the message to be published"
+  @type message :: binary() | map()
+
+  @type messages :: [message()]
 
   @typedoc "The connection information"
   @type t ::
           %{
             :__struct__ => Rambla.Connection,
             :conn => any(),
-            :conn_type => atom(),
             :conn_params => keyword(),
+            :conn_type => atom(),
             :conn_pid => pid(),
+            :opts => map(),
             :errors => [Rambla.Exception.t()]
           }
 
-  defstruct conn: nil, conn_params: [], conn_type: nil, conn_pid: nil, errors: []
+  defstruct conn: nil,
+            conn_params: [],
+            conn_type: nil,
+            conn_pid: nil,
+            opts: %{},
+            errors: []
 
   @doc "Connects to the remote service and returns a connection object back"
   @callback connect(params :: keyword()) :: t()
   @doc "Publishes the message to the remote service using connection provided"
-  @callback publish(conn :: any(), message :: binary() | map()) :: outcome()
+  @callback publish(conn :: any(), message :: message()) :: outcome()
 
   ##############################################################################
 
@@ -32,6 +52,7 @@ defmodule Rambla.Connection do
   require Logger
 
   @reconnect_interval 10_000
+  @keep_errors 20
 
   @doc """
   Accepts options for the underlying connection (those will be passed to `connect/1`.)
@@ -75,19 +96,33 @@ defmodule Rambla.Connection do
 
   @doc false
   @impl GenServer
-  def handle_call({:publish, message, opts}, _, %Rambla.Connection{conn: nil} = state),
-    do: {:reply, {:error, {:no_connection, {message, opts}}}, state}
+  def handle_call({:publish, messages, opts}, _, %Rambla.Connection{conn: nil} = state),
+    do: {:reply, {:error, {:no_connection, {messages, opts}}}, state}
+
+  @impl GenServer
+  def handle_call({:publish, [], opts}, _, state),
+    do: {:reply, {:error, :no_data, {[], opts}}, state}
 
   @impl GenServer
   def handle_call(
-        {:publish, message, opts},
+        {:publish, messages, opts},
         _,
-        %Rambla.Connection{conn: conn, conn_type: conn_type} = state
+        %Rambla.Connection{conn_type: conn_type, conn: conn} = state
       )
-      when is_map(message) or is_binary(message),
-      do:
-        {:reply, conn_type.publish(Map.update(conn, :opts, opts, &Map.merge(&1, opts)), message),
-         state}
+      when is_list(messages) do
+    opts = Map.update(conn, :opts, opts, &Map.merge(&1, opts))
+
+    %{oks: oks, errors: errors} =
+      Enum.reduce(messages, %{oks: [], errors: []}, fn message, acc ->
+        case conn_type.publish(opts, message) do
+          {:ok, result} -> %{acc | oks: [result | acc.oks]}
+          {:error, reason} -> %{acc | errors: [reason | acc.errors]}
+        end
+      end)
+
+    {:reply, %{oks: :lists.reverse(oks), errors: :lists.reverse(errors)},
+     %Rambla.Connection{state | errors: Enum.take(errors ++ state.errors, @keep_errors)}}
+  end
 
   @doc false
   @impl GenServer

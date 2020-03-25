@@ -29,7 +29,7 @@ defmodule Rambla.MixProject do
 
   def application do
     [
-      extra_applications: [:logger, :poolboy, :envio, :inets, :ssl],
+      extra_applications: [:lager, :logger, :poolboy, :envio, :inets, :ssl],
       mod: {Rambla.Application, []}
     ]
   end

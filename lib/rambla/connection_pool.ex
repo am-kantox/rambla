@@ -49,13 +49,26 @@ defmodule Rambla.ConnectionPool do
   @spec pools :: [{:undefined, pid() | :restarting, :worker | :supervisor, [:poolboy]}]
   def pools, do: DynamicSupervisor.which_children(Rambla.ConnectionPool)
 
-  @spec publish(type :: atom(), message :: binary() | map(), opts :: map()) ::
-          Rambla.Connection.outcome()
-  def publish(type, message, opts \\ %{}) when is_map(message) or is_binary(message) do
+  @spec publish(
+          type :: atom(),
+          messages :: Rambla.Connection.message() | Rambla.Connection.messages(),
+          opts :: map()
+        ) ::
+          Rambla.Connection.outcome() | Rambla.Connection.outcomes()
+  def publish(type, messages, opts \\ %{})
+
+  def publish(type, message, opts) when is_map(message) or is_binary(message) do
+    case publish(type, [message], opts) do
+      %{oks: [result], errors: []} -> {:ok, result}
+      %{oks: [], errors: [reason]} -> {:error, reason}
+    end
+  end
+
+  def publish(type, messages, opts) when is_list(messages) do
     type = fix_type(type)
 
-    response = :poolboy.transaction(type, &GenServer.call(&1, {:publish, message, opts}))
-    broadcast(type, %{message: message, response: response})
+    response = :poolboy.transaction(type, &GenServer.call(&1, {:publish, messages, opts}))
+    broadcast(type, %{message: messages, response: response})
     response
   end
 
