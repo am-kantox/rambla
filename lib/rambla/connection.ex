@@ -111,7 +111,7 @@ defmodule Rambla.Connection do
       )
       when is_list(messages) do
     opts = Map.update(conn, :opts, opts, &Map.merge(&1, opts))
-    {full_result, opts} = Map.pop(opts, :full_result, false)
+    {full_result, opts} = Map.pop(opts, :full_result, true)
 
     {result, errors} =
       if full_result do

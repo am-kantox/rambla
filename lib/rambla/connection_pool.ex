@@ -60,6 +60,7 @@ defmodule Rambla.ConnectionPool do
     case publish(type, [message], opts) do
       %{oks: [result], errors: []} -> {:ok, result}
       %{oks: [], errors: [reason]} -> {:error, reason}
+      other -> other
     end
   end
 
