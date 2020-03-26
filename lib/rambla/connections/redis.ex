@@ -27,7 +27,7 @@ defmodule Rambla.Redis do
 
   @impl Rambla.Connection
   def publish(%{pid: pid}, message),
-    do: {:ok, for({k, v} <- message, do: Exredis.Api.set(pid, k, v))}
+    do: {:ok, for({k, v} <- message, do: apply(Exredis.Api, :set, [pid, k, v]))}
 
   if @with_exredis do
     defp maybe_exredis(params) do
