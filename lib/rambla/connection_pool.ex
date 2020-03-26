@@ -4,10 +4,9 @@ defmodule Rambla.ConnectionPool do
 
   @notify_broadcast Application.get_env(:rambla, :notify_broadcast, true)
 
-  if @notify_broadcast do
-    use Envio.Publisher
-  else
-    defmacrop broadcast(_, _), do: :ok
+  case {@notify_broadcast, Code.ensure_compiled(Envio.Publisher)} do
+    {true, {:module, _}} -> use Envio.Publisher
+    _ -> defmacrop broadcast(_, _), do: :ok
   end
 
   @spec start_link(opts :: keyword) :: Supervisor.on_start()
