@@ -88,7 +88,7 @@ defmodule Rambla.ConnectionPool do
     end
   end
 
-  @spec timeout(count :: non_neg_integer()) :: :erlang.timeout()
+  @spec timeout(count :: non_neg_integer()) :: timeout()
   defp timeout(count) when count < 10_000, do: 5_000
   defp timeout(count) when count < 100_000, do: 15_000
   defp timeout(_count), do: :infinity
