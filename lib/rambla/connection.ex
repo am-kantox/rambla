@@ -111,16 +111,26 @@ defmodule Rambla.Connection do
       )
       when is_list(messages) do
     opts = Map.update(conn, :opts, opts, &Map.merge(&1, opts))
+    {full_result, opts} = Map.pop(opts, :full_result, false)
 
-    %{oks: oks, errors: errors} =
-      Enum.reduce(messages, %{oks: [], errors: []}, fn message, acc ->
-        case conn_type.publish(opts, message) do
-          {:ok, result} -> %{acc | oks: [result | acc.oks]}
-          {:error, reason} -> %{acc | errors: [reason | acc.errors]}
-        end
-      end)
+    {result, errors} =
+      if full_result do
+        %{oks: oks, errors: errors} =
+          Enum.reduce(messages, %{oks: [], errors: []}, fn message, acc ->
+            case conn_type.publish(opts, message) do
+              {:ok, result} -> %{acc | oks: [result | acc.oks]}
+              {:error, reason} -> %{acc | errors: [reason | acc.errors]}
+            end
+          end)
 
-    {:reply, %{oks: :lists.reverse(oks), errors: :lists.reverse(errors)},
+        errors = :lists.reverse(errors)
+        {%{oks: :lists.reverse(oks), errors: errors}, errors}
+      else
+        Enum.each(messages, &conn_type.publish(opts, &1))
+        {:ok, []}
+      end
+
+    {:reply, result,
      %Rambla.Connection{state | errors: Enum.take(errors ++ state.errors, @keep_errors)}}
   end
 

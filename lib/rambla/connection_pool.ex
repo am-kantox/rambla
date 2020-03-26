@@ -68,7 +68,11 @@ defmodule Rambla.ConnectionPool do
     timeout = messages |> length() |> timeout()
 
     response =
-      :poolboy.transaction(type, &GenServer.call(&1, {:publish, messages, opts}), timeout)
+      :poolboy.transaction(
+        type,
+        &GenServer.call(&1, {:publish, messages, opts}, timeout),
+        timeout
+      )
 
     broadcast(type, %{message: messages, response: response})
     response
@@ -90,6 +94,8 @@ defmodule Rambla.ConnectionPool do
 
   @spec timeout(count :: non_neg_integer()) :: timeout()
   defp timeout(count) when count < 10_000, do: 5_000
-  defp timeout(count) when count < 100_000, do: 15_000
+  defp timeout(count) when count < 20_000, do: 10_000
+  defp timeout(count) when count < 25_000, do: 15_000
+  defp timeout(count) when count < 30_000, do: 20_000
   defp timeout(_count), do: :infinity
 end
