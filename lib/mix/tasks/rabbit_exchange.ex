@@ -81,7 +81,8 @@ defmodule Mix.Tasks.Rambla.Rabbit.Exchange do
          opts =
            opts
            |> Keyword.get(:options, "")
-           |> String.replace(~r/:(?=\S)/, ": "),
+           |> String.replace(~r/:(?=\d)/, ": ")
+           |> String.replace(~r/:(?=\w)/, ": :"),
          {opts, _} <- Code.eval_string("[" <> opts <> "]"),
          :ok <- do_command(chan, String.to_atom(command), name, opts) do
       Mix.shell().info("Success.")
