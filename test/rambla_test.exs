@@ -8,7 +8,7 @@ defmodule RamblaTest do
        [
          options: [size: 5, max_overflow: 300],
          type: :local,
-         params: Application.fetch_env!(:rambla, :pools)[:amqp]
+         params: Application.fetch_env!(:rambla, :amqp)
        ]},
       {Rambla.Redis, params: Application.fetch_env!(:rambla, :pools)[:redis]},
       {Rambla.Http, params: Application.fetch_env!(:rambla, :pools)[:http]}
