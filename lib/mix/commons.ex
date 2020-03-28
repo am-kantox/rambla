@@ -48,8 +48,8 @@ defmodule Rambla.Tasks.Utils do
                |> String.replace(~r/:(?=\d)/, ": ")
                |> String.replace(~r/:(?=\w)/, ": :"),
              {opts, _} <- Code.eval_string("[" <> opts <> "]"),
-             :ok <- do_command(chan, String.to_atom(command), name, opts) do
-          Mix.shell().info("Success.")
+             {:ok, result} <- do_command(chan, String.to_atom(command), name, opts) do
+          Mix.shell().info("Success. " <> inspect(result))
         else
           amqp_base_error ->
             Mix.raise("Cannot execute command on target. Error:\n" <> inspect(amqp_base_error))

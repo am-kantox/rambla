@@ -52,7 +52,7 @@ defmodule Mix.Tasks.Rambla.Rabbit.Queue do
           command :: atom(),
           name :: binary(),
           opts :: keyword()
-        ) :: {:ok, binary()} | {:error, any()}
+        ) :: {:ok, any()} | {:error, any()}
   defp do_command(chan, :create, name, opts),
     do: do_command(chan, :declare, name, opts)
 

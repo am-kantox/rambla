@@ -52,17 +52,25 @@ defmodule Mix.Tasks.Rambla.Rabbit.Exchange do
           command :: atom(),
           name :: binary(),
           opts :: keyword()
-        ) :: :ok | {:error, any()}
+        ) :: {:ok, {:created | :deleted, binary()}} | {:error, any()}
   defp do_command(chan, :create, name, opts),
     do: do_command(chan, :declare, name, opts)
 
   defp do_command(chan, :declare, name, opts) do
     {type, opts} = Keyword.pop(opts, :type, :direct)
-    AMQP.Exchange.declare(chan, name, type, opts)
+
+    case AMQP.Exchange.declare(chan, name, type, opts) do
+      :ok -> {:ok, {:created, name}}
+      other -> other
+    end
   end
 
   defp do_command(chan, :delete, name, opts) do
     {_type, opts} = Keyword.pop(opts, :type, :direct)
-    AMQP.Exchange.delete(chan, name, opts)
+
+    case AMQP.Exchange.delete(chan, name, opts) do
+      :ok -> {:ok, {:deleted, name}}
+      other -> other
+    end
   end
 end
