@@ -42,61 +42,10 @@ defmodule Mix.Tasks.Rambla.Rabbit.Queue do
 
   """
 
-  use Mix.Task
-
-  @switches [
-    connection: :string,
-    options: :string
-  ]
   @commands ~w|declare create delete purge status|
 
-  require Logger
-
-  @impl Mix.Task
-  @doc false
-  def run([command, name | args]) when command in @commands do
-    Logger.configure(level: :error)
-    Process.flag(:trap_exit, true)
-
-    {opts, _} =
-      OptionParser.parse!(args, aliases: [o: :options, c: :connection], strict: @switches)
-
-    connection =
-      case Keyword.get(opts, :connection, Application.get_env(:rambla, :amqp)) do
-        uri when is_binary(uri) ->
-          uri
-
-        params when is_list(params) ->
-          port = if params[:port], do: ":#{params[:port]}", else: ""
-          "amqp://#{params[:username]}:#{params[:password]}@#{params[:host]}#{port}"
-
-        nil ->
-          Mix.raise(
-            "The connection string must be either passed as -c option or set in `config :rambla, :amqp`"
-          )
-      end
-
-    with {:ok, conn} <- AMQP.Connection.open(connection),
-         {:ok, chan} = AMQP.Channel.open(conn),
-         opts =
-           opts
-           |> Keyword.get(:options, "")
-           |> String.replace(~r/:(?=\S)/, ": "),
-         {opts, _} <- Code.eval_string("[" <> opts <> "]"),
-         {:ok, result} <- do_command(chan, String.to_atom(command), name, opts) do
-      Mix.shell().info("Success. Results are: " <> inspect(result))
-    else
-      amqp_base_error ->
-        Mix.raise("Cannot execute command on target. Error:\n" <> inspect(amqp_base_error))
-    end
-  end
-
-  @doc false
-  def run(_),
-    do:
-      Mix.raise(
-        "Usage: mix rambla.rabbit.queue (" <> Enum.join(@commands, "|") <> ") name [opts]"
-      )
+  use Mix.Task
+  use Rambla.Tasks.Utils
 
   @spec do_command(
           chan :: AMQP.Channel.t(),
