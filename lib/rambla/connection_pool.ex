@@ -19,10 +19,10 @@ defmodule Rambla.ConnectionPool do
   @spec start_pools :: [DynamicSupervisor.on_start_child()]
   def start_pools do
     pools =
-      for {k, v} <- IO.inspect(Application.get_env(:rambla, :pools, []), label: "POOL"),
+      for {k, v} <- Application.get_env(:rambla, :pools, []),
           do: {k, Keyword.merge(Application.get_env(:rambla, k, []), v)}
 
-    start_pools(for {k, v} <- IO.inspect(pools, label: "LOOP"), do: {fix_type(k), params: v})
+    start_pools(for {k, v} <- pools, do: {fix_type(k), params: v})
   end
 
   @spec start_pools(%{required(atom()) => keyword()} | keyword()) :: [
