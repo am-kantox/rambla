@@ -1,5 +1,6 @@
 defmodule Mix.Tasks.Rambla.Rabbit.Queue do
   @shortdoc "Operations with queues in RabbitMQ"
+  @moduledoc since: "0.6.0"
   @moduledoc """
   Mix task to deal with queues in the target RabbitMQ.
 

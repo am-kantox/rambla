@@ -15,6 +15,20 @@ defmodule Rambla.Amqp do
     used as a routing key
   - `options` [`keyword()`, **optional**, _default_: `[]`] the options
     to be passe as is to call to `AMQP.Basic.publish/5`
+
+  ---
+
+  Since `v0.6.0` provides two `mix` tasks:
+
+  - `mix rambla.rabbit.exchange` Operations with exchanges in RabbitMQ
+  - `mix rambla.rabbit.queue`    Operations with queues in RabbitMQ
+
+  Tasks support arguments to be passed to RabbitMQ instance. Usage example:
+
+  ```
+  mix rambla.rabbit.queue declare foo -o durable:true
+  ```
+
   """
   @behaviour Rambla.Connection
 

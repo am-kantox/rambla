@@ -1,5 +1,6 @@
 defmodule Mix.Tasks.Rambla.Rabbit.Exchange do
   @shortdoc "Operations with exchanges in RabbitMQ"
+  @moduledoc since: "0.6.0"
   @moduledoc """
   Mix task to deal with exchanges in the target RabbitMQ.
 
