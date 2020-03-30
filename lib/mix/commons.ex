@@ -54,6 +54,10 @@ defmodule Rambla.Tasks.Utils do
           amqp_base_error ->
             Mix.raise("Cannot execute command on target. Error:\n" <> inspect(amqp_base_error))
         end
+
+        __MODULE__
+        |> Mix.Task.task_name()
+        |> Mix.Task.reenable()
       end
 
       @doc false
