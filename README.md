@@ -26,7 +26,7 @@ end
 
 ## Changelog
 
--  **`0.6.4`** `RabbitMQ` → `bind`, `unbind`
+-  **`0.6.5`** `RabbitMQ` → `bind`, `unbind`
 -  **`0.6.3`** Auto-reenable tasks
 -  **`0.6.2`** code cleanup, DRY
 -  **`0.6.0`** `mix` tasks to deal with RabbitMQ

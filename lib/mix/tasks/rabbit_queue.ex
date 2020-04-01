@@ -69,7 +69,7 @@ defmodule Mix.Tasks.Rambla.Rabbit.Queue do
             {:error, {:exchange_option_required, command}}
 
           {exchange, opts} ->
-            {:ok, apply(AMQP.Queue, command, [chan, name, exchange, opts])}
+            {:ok, apply(AMQP.Queue, command, [chan, name, to_string(exchange), opts])}
         end
 
       [3 | _] ->
