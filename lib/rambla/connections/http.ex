@@ -43,7 +43,7 @@ defmodule Rambla.Http do
       |> Enum.map(&Map.new/1)
 
     %Rambla.Connection{
-      conn: %{conn: params[:host], opts: opts, defaults: defaults},
+      conn: %Rambla.Connection.Config{conn: params[:host], opts: opts, defaults: defaults},
       conn_type: __MODULE__,
       conn_pid: self(),
       conn_params: params,
@@ -52,9 +52,9 @@ defmodule Rambla.Http do
   end
 
   @impl Rambla.Connection
-  def publish(%{conn: conn, opts: opts, defaults: defaults}, message) when is_binary(message),
+  def publish(%Rambla.Connection.Config{} = conn, message) when is_binary(message),
     do:
-      publish(%{conn: conn, opts: opts, defaults: defaults}, %{
+      publish(conn, %{
         method: :get,
         host: "",
         port: "",
@@ -62,7 +62,15 @@ defmodule Rambla.Http do
       })
 
   @impl Rambla.Connection
-  def publish(%{conn: _conn, opts: opts, defaults: defaults}, message)
+  def publish(%Rambla.Connection.Config{} = conn, message) when is_binary(message),
+    do: publish(conn, Jason.decode!(message))
+
+  @impl Rambla.Connection
+  def publish(%Rambla.Connection.Config{} = conn, message) when is_list(message),
+    do: publish(conn, Map.new(message))
+
+  @impl Rambla.Connection
+  def publish(%Rambla.Connection.Config{opts: opts, defaults: defaults}, message)
       when is_map(opts) and is_map(message) do
     {method, message} = Map.pop(message, :method, :get)
 

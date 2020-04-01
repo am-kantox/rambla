@@ -18,15 +18,33 @@ defmodule Rambla.Connection do
   @type outcomes :: %{oks: [any()], errors: [Rambla.Exception.t()]}
 
   @typedoc "The accepted type of the message to be published"
-  @type message :: binary() | map()
+  @type message :: binary() | Enum.t()
 
   @type messages :: [message()]
+
+  defmodule Config do
+    @moduledoc """
+    The connection settings as requested by connection provider
+    """
+
+    @typedoc "The configuration of the real connection behind a pool"
+    @type t :: %{
+            __struct__: __MODULE__,
+            conn: any(),
+            chan: any(),
+            opts: map(),
+            defaults: map(),
+            full_result: boolean()
+          }
+
+    defstruct conn: nil, chan: nil, opts: %{}, defaults: %{}, full_result: false
+  end
 
   @typedoc "The connection information"
   @type t ::
           %{
             :__struct__ => Rambla.Connection,
-            :conn => any(),
+            :conn => Config.t(),
             :conn_params => keyword(),
             :conn_type => atom(),
             :conn_pid => pid(),
@@ -110,14 +128,13 @@ defmodule Rambla.Connection do
         %Rambla.Connection{conn_type: conn_type, conn: conn} = state
       )
       when is_list(messages) do
-    opts = Map.update(conn, :opts, opts, &Map.merge(&1, opts))
-    {full_result, opts} = Map.pop(opts, :full_result, true)
+    conn = %Config{conn | opts: Map.merge(conn.opts, opts)}
 
     {result, errors} =
-      if full_result do
+      if conn.full_result do
         %{oks: oks, errors: errors} =
           Enum.reduce(messages, %{oks: [], errors: []}, fn message, acc ->
-            case conn_type.publish(opts, message) do
+            case conn_type.publish(conn, message) do
               {:ok, result} -> %{acc | oks: [result | acc.oks]}
               {:error, reason} -> %{acc | errors: [reason | acc.errors]}
             end
@@ -126,7 +143,7 @@ defmodule Rambla.Connection do
         errors = :lists.reverse(errors)
         {%{oks: :lists.reverse(oks), errors: errors}, errors}
       else
-        Enum.each(messages, &conn_type.publish(opts, &1))
+        Enum.each(messages, &conn_type.publish(conn, &1))
         {:ok, []}
       end
 

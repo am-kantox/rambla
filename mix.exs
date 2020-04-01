@@ -20,7 +20,7 @@ defmodule Rambla.MixProject do
       docs: docs(),
       dialyzer: [
         plt_file: {:no_warn, ".dialyzer/plts/dialyzer.plt"},
-        plt_add_apps: [:amqp, :exredis, :httpc, :inets, :ssl, :mix],
+        plt_add_apps: [:amqp, :redix, :httpc, :inets, :ssl, :mix, :gen_smtp_client],
         ignore_warnings: ".dialyzer/ignore.exs"
       ]
     ]
@@ -56,9 +56,9 @@ defmodule Rambla.MixProject do
 
       # optional backends
       {:amqp, "~> 1.2", optional: true},
-      {:exredis, "~> 0.3", optional: true},
+      {:redix, "~> 0.10", optional: true},
       {:envio, "~> 0.4", optional: true},
-      {:gen_smtp, "~> 0.15"},
+      {:gen_smtp, "~> 0.15", optional: true},
 
       # dev, test
       {:credo, "~> 1.0", only: [:dev, :ci], runtime: false},

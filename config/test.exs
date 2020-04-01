@@ -13,9 +13,7 @@ config :rambla,
         host: System.get_env("REDIS_HOST", "127.0.0.1"),
         port: String.to_integer(System.get_env("REDIS_PORT", "6379")),
         password: System.get_env("REDIS_PASSWORD", ""),
-        db: 0,
-        reconnect: 1_000,
-        max_queue: :infinity
+        database: 0
       ],
       amqp: [
         virtual_host: System.get_env("RABBITMQ_VHOST", "/"),

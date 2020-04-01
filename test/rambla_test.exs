@@ -61,10 +61,11 @@ defmodule RamblaTest do
   test "works with redis" do
     Rambla.ConnectionPool.publish(Rambla.Redis, %{foo: 42})
 
-    %Rambla.Connection{conn: %{pid: pid}} = Rambla.ConnectionPool.conn(Rambla.Redis)
+    %Rambla.Connection{conn: %Rambla.Connection.Config{conn: pid}} =
+      Rambla.ConnectionPool.conn(Rambla.Redis)
 
-    assert "42" = Exredis.Api.get(pid, "foo")
-    assert 1 = Exredis.Api.del(pid, "foo")
-    assert :undefined == Exredis.Api.get(pid, "foo")
+    assert {:ok, "42"} = Redix.command(pid, ["GET", "foo"])
+    assert {:ok, 1} = Redix.command(pid, ["DEL", "foo"])
+    assert {:ok, nil} == Redix.command(pid, ["GET", "foo"])
   end
 end

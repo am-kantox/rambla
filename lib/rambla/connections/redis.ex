@@ -3,40 +3,49 @@ defmodule Rambla.Redis do
   Default connection implementation for 🔴 Redis.
   """
 
-  @with_exredis match?({:module, _}, Code.ensure_compiled(Exredis))
+  @with_redis match?({:module, _}, Code.ensure_compiled(Redix))
 
   @behaviour Rambla.Connection
 
   @impl Rambla.Connection
 
   def connect(params) when is_list(params) do
-    if not @with_exredis or is_nil(params[:host]),
+    if not @with_redis or is_nil(params[:host]),
       do:
         raise(Rambla.Exceptions.Connection,
           source: __MODULE__,
           info: params,
-          reason: "🔴 Exredis included and configured with :host key"
+          reason: "🔴 Redix included and configured with :host key"
         )
 
-    maybe_exredis(params)
+    maybe_redis(params)
   end
 
   @impl Rambla.Connection
-  def publish(%{pid: pid}, message) when is_binary(message),
-    do: publish(%{pid: pid}, Jason.decode!(message))
+  def publish(%Rambla.Connection.Config{} = conn, message) when is_binary(message),
+    do: publish(conn, Jason.decode!(message))
 
   @impl Rambla.Connection
-  def publish(%{pid: pid}, message),
-    do: {:ok, for({k, v} <- message, do: apply(Exredis.Api, :set, [pid, k, v]))}
+  def publish(%Rambla.Connection.Config{conn: pid}, message)
+      when is_map(message) or is_list(message) do
+    to_pipeline = for {k, v} <- message, do: ["SET", k, v]
+    apply(Redix, :pipeline, [pid, to_pipeline])
+  end
 
-  if @with_exredis do
-    defp maybe_exredis(params) do
-      config = struct(Exredis.Config.Config, params)
+  if @with_redis do
+    defp maybe_redis(params) do
+      params =
+        params
+        |> Keyword.get(:password, "")
+        |> case do
+          <<_::binary-size(1), _::binary>> -> params
+          _ -> Keyword.delete(params, :password)
+        end
 
-      case Exredis.start_link(config) do
+      case Redix.start_link(params) do
         {:ok, pid} ->
           %Rambla.Connection{
-            conn: %{pid: pid},
+            conn: %Rambla.Connection.Config{conn: pid},
             conn_type: __MODULE__,
             conn_pid: pid,
             conn_params: params,
@@ -45,7 +54,7 @@ defmodule Rambla.Redis do
 
         error ->
           %Rambla.Connection{
-            conn: nil,
+            conn: %Rambla.Connection.Config{},
             conn_type: __MODULE__,
             conn_pid: nil,
             conn_params: params,
@@ -54,16 +63,16 @@ defmodule Rambla.Redis do
       end
     end
   else
-    defp maybe_exredis(params) do
+    defp maybe_redis(params) do
       error =
         Rambla.Exceptions.Connection.exception(
           source: __MODULE__,
           info: params,
-          reason: "🔴 Exredis should be explicitly included to use this functionality"
+          reason: "🔴 Redix should be explicitly included to use this functionality"
         )
 
       %Rambla.Connection{
-        conn: nil,
+        conn: %Rambla.Connection.Config{},
         conn_type: __MODULE__,
         conn_pid: nil,
         conn_params: params,

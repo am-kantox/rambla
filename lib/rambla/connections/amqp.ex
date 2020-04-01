@@ -46,7 +46,7 @@ defmodule Rambla.Amqp do
     with {:ok, conn} <- AMQP.Connection.open(params),
          {:ok, chan} <- AMQP.Channel.open(conn) do
       %Rambla.Connection{
-        conn: %{conn: conn, chan: chan},
+        conn: %Rambla.Connection.Config{conn: conn, chan: chan},
         conn_type: __MODULE__,
         conn_pid: conn.pid,
         conn_params: params,
@@ -55,7 +55,7 @@ defmodule Rambla.Amqp do
     else
       error ->
         %Rambla.Connection{
-          conn: nil,
+          conn: %Rambla.Connection.Config{},
           conn_type: __MODULE__,
           conn_pid: nil,
           conn_params: params,
@@ -65,24 +65,28 @@ defmodule Rambla.Amqp do
   end
 
   @impl Rambla.Connection
-  def publish(%{conn: conn, chan: chan, opts: opts}, message) when is_binary(message),
-    do: publish(%{conn: conn, chan: chan, opts: opts}, Jason.decode!(message))
+  def publish(%Rambla.Connection.Config{} = conn, message) when is_binary(message),
+    do: publish(conn, Jason.decode!(message))
 
   @impl Rambla.Connection
-  def publish(%{conn: _conn, chan: chan, opts: opts}, message)
-      when is_map(opts) and is_map(message) do
+  def publish(%Rambla.Connection.Config{} = conn, message) when is_list(message),
+    do: publish(conn, Map.new(message))
+
+  @impl Rambla.Connection
+  def publish(%Rambla.Connection.Config{conn: _conn, chan: chan, opts: opts}, message)
+      when is_map(message) do
     with %{exchange: exchange} <- opts,
          declare? <- Map.get(opts, :declare?, true),
-         if(declare?, do: AMQP.Exchange.declare(chan, exchange)),
+         if(declare?, do: apply(AMQP.Exchange, :declare, [chan, exchange])),
          :ok <- queue!(chan, opts),
          :ok <-
-           AMQP.Basic.publish(
+           apply(AMQP.Basic, :publish, [
              chan,
              exchange,
              Map.get(opts, :routing_key, ""),
              Jason.encode!(message),
              Map.get(opts, :options, [])
-           ) do
+           ]) do
       {:ok, message}
     else
       error -> {:error, error}
@@ -92,8 +96,8 @@ defmodule Rambla.Amqp do
   @spec queue!(chan :: AMQP.Channel.t(), map()) :: :ok
   defp queue!(chan, %{queue: queue, exchange: exchange}) do
     with {:ok, %{consumer_count: _, message_count: _, queue: ^queue}} <-
-           AMQP.Queue.declare(chan, queue),
-         do: AMQP.Queue.bind(chan, queue, exchange)
+           apply(AMQP.Queue, :declare, [chan, queue]),
+         do: apply(AMQP.Queue, :bind, [chan, queue, exchange])
   end
 
   defp queue!(_, %{exchange: _exchange}), do: :ok

@@ -15,7 +15,7 @@ end
 ## Supported back-ends
 
 - Rabbit (through [Amqp](https://hexdocs.pm/amqp/))
-- Redis (through [Exredis](https://hexdocs.pm/exredis))
+- Redis (through [Redix](https://hexdocs.pm/redix))
 - Http (through [:httpc](http://erlang.org/doc/man/httpc.html))
 - Smtp (through [:gen_smtp](https://hexdocs.pm/gen_smtp))
 - Slack (through [Envío](https://hexdocs.pm/envio))

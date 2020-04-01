@@ -36,7 +36,7 @@ defmodule Rambla.Smtp do
       |> Enum.map(&Map.new/1)
 
     %Rambla.Connection{
-      conn: %{conn: params[:hostname], opts: opts, defaults: defaults},
+      conn: %Rambla.Connection.Config{conn: params[:hostname], opts: opts, defaults: defaults},
       conn_type: __MODULE__,
       conn_pid: self(),
       conn_params: params,
@@ -45,11 +45,15 @@ defmodule Rambla.Smtp do
   end
 
   @impl Rambla.Connection
-  def publish(%{conn: conn, opts: opts, defaults: defaults}, message) when is_binary(message),
-    do: publish(%{conn: conn, opts: opts, defaults: defaults}, Jason.decode!(message))
+  def publish(%Rambla.Connection.Config{} = conn, message) when is_binary(message),
+    do: publish(conn, Jason.decode!(message))
 
   @impl Rambla.Connection
-  def publish(%{conn: _conn, opts: opts, defaults: defaults}, message)
+  def publish(%Rambla.Connection.Config{} = conn, message) when is_list(message),
+    do: publish(conn, Map.new(message))
+
+  @impl Rambla.Connection
+  def publish(%Rambla.Connection.Config{opts: opts, defaults: defaults}, message)
       when is_map(opts) and is_map(message) do
     {to, message} = Map.pop(message, :to)
     {from, message} = Map.pop(message, :from, Map.get(opts, :from, []))
@@ -64,11 +68,11 @@ defmodule Rambla.Smtp do
       |> Enum.map(&(&1 |> Tuple.to_list() |> Enum.join()))
       |> Enum.join("\r\n")
 
-    :gen_smtp_client.send(
+    apply(:gen_smtp_client, :send, [
       {to, Map.values(from), smtp_message},
       defaults
       |> Map.merge(Map.take(opts, @conn_params))
       |> Map.to_list()
-    )
+    ])
   end
 end

@@ -81,7 +81,7 @@ defmodule Rambla.ConnectionPool do
     response
   end
 
-  @spec conn(type :: atom()) :: any()
+  @spec conn(type :: atom()) :: Rambla.Connection.Config.t()
   def conn(type),
     do: type |> fix_type() |> :poolboy.transaction(&GenServer.call(&1, :conn))
 
