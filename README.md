@@ -26,6 +26,7 @@ end
 
 ## Changelog
 
+-  **`0.6.3`** `RabbitMQ` → `bind`, `unbind`
 -  **`0.6.2`** code cleanup, DRY
 -  **`0.6.0`** `mix` tasks to deal with RabbitMQ
 -  **`0.5.2`** graceful timeout, fix for optional `Envio` does not included

@@ -6,7 +6,8 @@ defmodule Mix.Tasks.Rambla.Rabbit.Queue do
 
   This is helpful to orchestrate target RabbitMQ when deploying
   to docker. Allows to create, delete, purge and query status of
-  the queue.
+  the queue. Also, `bind` and `unbind` commands are supported,
+  both require `exchange:...` option to be passed.
 
   Loads the setting from `config :rambla, :amqp` if no connection
   is provided in parameters.
@@ -42,14 +43,15 @@ defmodule Mix.Tasks.Rambla.Rabbit.Queue do
 
   """
 
-  @commands ~w|declare create delete purge status|
+  @commands ~w|declare create delete purge bind unbind status|
+  @type command :: :declare | :create | :delete | :purge | :bind | :unbind | :status
 
   use Mix.Task
   use Rambla.Tasks.Utils
 
   @spec do_command(
           chan :: AMQP.Channel.t(),
-          command :: atom(),
+          command :: command(),
           name :: binary(),
           opts :: keyword()
         ) :: {:ok, any()} | {:error, any()}
@@ -61,9 +63,23 @@ defmodule Mix.Tasks.Rambla.Rabbit.Queue do
     |> Keyword.get_values(command)
     |> :lists.reverse()
     |> case do
-      [3 | _] -> {:ok, apply(AMQP.Queue, command, [chan, name, opts])}
-      [2 | _] -> {:ok, apply(AMQP.Queue, command, [chan, name])}
-      _other -> {:error, {:unknown_command, command}}
+      [4 | _] ->
+        case Keyword.pop(opts, :exchange) do
+          {nil, _} ->
+            {:error, {:exchange_option_required, command}}
+
+          {exchange, opts} ->
+            {:ok, apply(AMQP.Queue, command, [chan, name, exchange, opts])}
+        end
+
+      [3 | _] ->
+        {:ok, apply(AMQP.Queue, command, [chan, name, opts])}
+
+      [2 | _] ->
+        {:ok, apply(AMQP.Queue, command, [chan, name])}
+
+      _other ->
+        {:error, {:unknown_command, command}}
     end
   end
 end

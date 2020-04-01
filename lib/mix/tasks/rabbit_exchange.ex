@@ -43,13 +43,14 @@ defmodule Mix.Tasks.Rambla.Rabbit.Exchange do
   """
 
   @commands ~w|declare create delete|
+  @type command :: :declare | :create | :delete
 
   use Mix.Task
   use Rambla.Tasks.Utils
 
   @spec do_command(
           chan :: AMQP.Channel.t(),
-          command :: atom(),
+          command :: command(),
           name :: binary(),
           opts :: keyword()
         ) :: {:ok, {:created | :deleted, binary()}} | {:error, any()}
