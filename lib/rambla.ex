@@ -28,4 +28,12 @@ defmodule Rambla do
   to have `to:`, `subject:` and `body:` fields.
   """
   defdelegate publish(target, message), to: Rambla.ConnectionPool
+
+  @doc """
+  Executes any arbitrary function in the context of one of workers in the
+  respective connection pool for the target.
+
+  The function would receive a pid of the connection process.
+  """
+  defdelegate raw(target, f), to: Rambla.ConnectionPool
 end

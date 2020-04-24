@@ -85,6 +85,18 @@ defmodule Rambla.ConnectionPool do
   def conn(type),
     do: type |> fix_type() |> :poolboy.transaction(&GenServer.call(&1, :conn))
 
+  @spec raw(type :: atom(), (pid() -> any())) :: any()
+  def raw(type, f) when is_function(f, 1) do
+    type
+    |> fix_type()
+    |> :poolboy.transaction(fn pid ->
+      case GenServer.call(pid, :conn) do
+        %Rambla.Connection{conn_pid: pid} -> {:ok, f.(pid)}
+        _ -> {:error, :connection}
+      end
+    end)
+  end
+
   @spec fix_type(k :: binary() | atom()) :: module()
   defp fix_type(k) when is_binary(k), do: String.to_existing_atom(k)
 

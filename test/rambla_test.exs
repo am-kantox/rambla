@@ -58,7 +58,7 @@ defmodule RamblaTest do
     assert {:empty, _} = AMQP.Basic.get(chan, "rambla-queue-2")
   end
 
-  test "works with redis" do
+  test "works with redis (hacky low-level)" do
     Rambla.ConnectionPool.publish(Rambla.Redis, %{foo: 42})
 
     %Rambla.Connection{conn: %Rambla.Connection.Config{conn: pid}} =
@@ -67,5 +67,19 @@ defmodule RamblaTest do
     assert {:ok, "42"} = Redix.command(pid, ["GET", "foo"])
     assert {:ok, 1} = Redix.command(pid, ["DEL", "foo"])
     assert {:ok, nil} == Redix.command(pid, ["GET", "foo"])
+  end
+
+  test "works with redis" do
+    Rambla.publish(Rambla.Redis, %{foo: 42})
+
+    raw_response =
+      Rambla.raw(Rambla.Redis, fn pid ->
+        r1 = Redix.command(pid, ["GET", "foo"])
+        r2 = Redix.command(pid, ["DEL", "foo"])
+        r3 = Redix.command(pid, ["GET", "foo"])
+        {r1, r2, r3}
+      end)
+
+    assert raw_response == {:ok, {{:ok, "42"}, {:ok, 1}, {:ok, nil}}}
   end
 end
