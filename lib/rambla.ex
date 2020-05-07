@@ -30,6 +30,11 @@ defmodule Rambla do
   defdelegate publish(target, message), to: Rambla.ConnectionPool
 
   @doc """
+  Publishes the message to the target pool, allowing additional options to be set.
+  """
+  defdelegate publish(target, message, opts), to: Rambla.ConnectionPool
+
+  @doc """
   Executes any arbitrary function in the context of one of workers in the
   respective connection pool for the target.
 
