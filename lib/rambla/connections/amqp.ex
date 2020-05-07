@@ -68,11 +68,9 @@ defmodule Rambla.Amqp do
   def publish(%Rambla.Connection.Config{} = conn, message) when is_binary(message) do
     message =
       case Jason.decode(message) do
-        {:ok, term} -> term
-        {:error, _} -> message
+        {:ok, term} -> publish(conn, term)
+        {:error, _} -> do_publish(conn, message)
       end
-
-    publish(conn, message)
   end
 
   @impl Rambla.Connection
@@ -80,8 +78,17 @@ defmodule Rambla.Amqp do
     do: publish(conn, Map.new(message))
 
   @impl Rambla.Connection
-  def publish(%Rambla.Connection.Config{conn: _conn, chan: chan, opts: opts}, message)
-      when is_map(message) do
+  def publish(%Rambla.Connection.Config{} = cfg, message)
+      when is_map(message),
+      do: do_publish(cfg, message)
+
+  @spec do_publish(%Rambla.Connection.Config{}, binary() | map()) ::
+          {:ok, map()} | {:error, any()}
+  defp do_publish(%Rambla.Connection.Config{} = cfg, %{} = message),
+    do: do_publish(cfg, Jason.encode!(message))
+
+  defp do_publish(%Rambla.Connection.Config{conn: _conn, chan: chan, opts: opts}, message)
+       when is_binary(message) do
     with %{exchange: exchange} <- opts,
          declare? <- Map.get(opts, :declare?, true),
          if(declare?, do: apply(AMQP.Exchange, :declare, [chan, exchange])),
@@ -91,7 +98,7 @@ defmodule Rambla.Amqp do
              chan,
              exchange,
              Map.get(opts, :routing_key, ""),
-             Jason.encode!(message),
+             message,
              Map.get(opts, :options, [])
            ]) do
       {:ok, message}
