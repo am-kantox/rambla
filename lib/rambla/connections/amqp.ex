@@ -65,8 +65,15 @@ defmodule Rambla.Amqp do
   end
 
   @impl Rambla.Connection
-  def publish(%Rambla.Connection.Config{} = conn, message) when is_binary(message),
-    do: publish(conn, Jason.decode!(message))
+  def publish(%Rambla.Connection.Config{} = conn, message) when is_binary(message) do
+    message =
+      case Jason.decode(message) do
+        {:ok, term} -> term
+        {:error, _} -> message
+      end
+
+    publish(conn, message)
+  end
 
   @impl Rambla.Connection
   def publish(%Rambla.Connection.Config{} = conn, message) when is_list(message),
