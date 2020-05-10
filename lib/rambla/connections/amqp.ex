@@ -14,7 +14,7 @@ defmodule Rambla.Amqp do
   - `routing_key` [`binary()`, **optional**, _default_: `""`] if passed,
     used as a routing key
   - `options` [`keyword()`, **optional**, _default_: `[]`] the options
-    to be passe as is to call to `AMQP.Basic.publish/5`
+    to be passed as is to call to `AMQP.Basic.publish/5`
 
   ---
 
