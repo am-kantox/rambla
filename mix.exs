@@ -14,7 +14,7 @@ defmodule Rambla.MixProject do
       package: package(),
       aliases: aliases(),
       deps: deps(),
-      description: "Easy publishing to many different targets",
+      description: description(),
       name: "Rambla",
       xref: [exclude: []],
       docs: docs(),
@@ -33,9 +33,19 @@ defmodule Rambla.MixProject do
     ]
   end
 
-  defp elixirc_paths(:test), do: ["lib", "test/support"]
-  defp elixirc_paths(:ci), do: ["lib", "test/support"]
-  defp elixirc_paths(_), do: ["lib"]
+  defp description do
+    """
+    Easy publishing to many different targets.
+
+    Supported back-ends
+
+    - Rabbit (through [Amqp](https://hexdocs.pm/amqp/))
+    - Redis (through [Redix](https://hexdocs.pm/redix))
+    - Http (through [:httpc](http://erlang.org/doc/man/httpc.html))
+    - Smtp (through [:gen_smtp](https://hexdocs.pm/gen_smtp))
+    - Slack (through [Envío](https://hexdocs.pm/envio))
+    """
+  end
 
   defp aliases do
     [
@@ -70,7 +80,7 @@ defmodule Rambla.MixProject do
   defp package() do
     [
       # These are the default files included in the package
-      files: ~w(lib .formatter.exs .dialyzer/ignore.exs mix.exs README*),
+      files: ~w|lib .formatter.exs .dialyzer/ignore.exs mix.exs README* LICENSE|,
       maintainers: ["Aleksei Matiushkin"],
       licenses: ["Kantox LTD"],
       links: %{"GitHub" => "https://github.com/am-kantox/#{@app}"}
@@ -91,4 +101,8 @@ defmodule Rambla.MixProject do
       ]
     ]
   end
+
+  defp elixirc_paths(:test), do: ["lib", "test/support"]
+  defp elixirc_paths(:ci), do: ["lib", "test/support"]
+  defp elixirc_paths(_), do: ["lib"]
 end
