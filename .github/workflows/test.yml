@@ -25,14 +25,16 @@ jobs:
       with:
         otp-version: ${{matrix.otp}}
         elixir-version: ${{matrix.elixir}}
+    - name: Conform
+      uses: talos-systems/conform@v0.1.0-alpha.19
     - name: Install Dependencies
       run: |
-        mix local.rebar --force
-        mix local.hex --force
-        mix deps.get
+        MIX_ENV=test mix local.rebar --force
+        MIX_ENV=test mix local.hex --force
+        MIX_ENV=test mix deps.get
     - name: Run All Tests
       run: |
-        mix test
+        MIX_ENV=test mix test
       env:
         RABBITMQ_HOST: localhost
         RABBITMQ_PORT: ${{job.services.rabbitmq.ports[5672]}}
