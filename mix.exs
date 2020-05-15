@@ -37,13 +37,13 @@ defmodule Rambla.MixProject do
     """
     Easy publishing to many different targets.
 
-    Supported back-ends
+    Supported back-ends:
 
-    - Rabbit ([Amqp](https://hexdocs.pm/amqp/))
-    - Redis ([Redix](https://hexdocs.pm/redix))
-    - Http ([:httpc](http://erlang.org/doc/man/httpc.html))
-    - Smtp ([:gen_smtp](https://hexdocs.pm/gen_smtp))
-    - Slack ([Envío](https://hexdocs.pm/envio))
+    - Rabbit [Amqp](https://hexdocs.pm/amqp/)
+    - Redis [Redix](https://hexdocs.pm/redix)
+    - Http [:httpc](http://erlang.org/doc/man/httpc.html)
+    - Smtp [:gen_smtp](https://hexdocs.pm/gen_smtp)
+    - Slack [Envío](https://hexdocs.pm/envio)
     """
   end
 
