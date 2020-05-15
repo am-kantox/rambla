@@ -1,13 +1,23 @@
+defmodule Rambla.Envio do
+  @moduledoc false
+  if Application.get_env(:rambla, :notify_broadcast, true) and
+       match?({:module, Envio.Publisher}, Code.ensure_compiled(Envio.Publisher)) do
+    defmacro use() do
+      quote do: use(Envio.Publisher)
+    end
+  else
+    defmacro use() do
+      quote do: defmacrop(broadcast(_, _), do: :ok)
+    end
+  end
+end
+
 defmodule Rambla.ConnectionPool do
   @moduledoc false
   use DynamicSupervisor
 
-  @notify_broadcast Application.get_env(:rambla, :notify_broadcast, true)
-
-  case {@notify_broadcast, Code.ensure_compiled(Envio.Publisher)} do
-    {true, {:module, _}} -> use Envio.Publisher
-    _ -> defmacrop broadcast(_, _), do: :ok
-  end
+  require Rambla.Envio
+  Rambla.Envio.use()
 
   @spec start_link(opts :: keyword) :: Supervisor.on_start()
   def start_link(opts \\ []),

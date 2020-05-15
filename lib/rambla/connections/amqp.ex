@@ -30,38 +30,23 @@ defmodule Rambla.Amqp do
   ```
 
   """
+
+  @with_amqp match?({:module, _}, Code.ensure_compiled(AMQP.Channel))
+
   @behaviour Rambla.Connection
 
   #  rabbit = Keyword.get(state, :conn, Application.get_env(:eventory, :amqp, []))
 
   @impl Rambla.Connection
   def connect(params) when is_list(params) do
-    if is_nil(params[:host]),
+    if not @with_amqp or is_nil(params[:host]),
       do:
         raise(Rambla.Exceptions.Connection,
           value: params,
           expected: "🐰 configuration with :host key"
         )
 
-    with {:ok, conn} <- AMQP.Connection.open(params),
-         {:ok, chan} <- AMQP.Channel.open(conn) do
-      %Rambla.Connection{
-        conn: %Rambla.Connection.Config{conn: conn, chan: chan},
-        conn_type: __MODULE__,
-        conn_pid: conn.pid,
-        conn_params: params,
-        errors: []
-      }
-    else
-      error ->
-        %Rambla.Connection{
-          conn: %Rambla.Connection.Config{},
-          conn_type: __MODULE__,
-          conn_pid: nil,
-          conn_params: params,
-          errors: [error]
-        }
-    end
+    maybe_amqp(params)
   end
 
   @impl Rambla.Connection
@@ -114,4 +99,45 @@ defmodule Rambla.Amqp do
   end
 
   defp queue!(_, %{exchange: _exchange}), do: :ok
+
+  if @with_amqp do
+    defp maybe_amqp(params) do
+      with {:ok, conn} <- AMQP.Connection.open(params),
+           {:ok, chan} <- AMQP.Channel.open(conn) do
+        %Rambla.Connection{
+          conn: %Rambla.Connection.Config{conn: conn, chan: chan},
+          conn_type: __MODULE__,
+          conn_pid: conn.pid,
+          conn_params: params,
+          errors: []
+        }
+      else
+        error ->
+          %Rambla.Connection{
+            conn: %Rambla.Connection.Config{},
+            conn_type: __MODULE__,
+            conn_pid: nil,
+            conn_params: params,
+            errors: [error]
+          }
+      end
+    end
+  else
+    defp maybe_amqp(params) do
+      error =
+        Rambla.Exceptions.Connection.exception(
+          source: __MODULE__,
+          info: params,
+          reason: "🐰 AMQP should be explicitly included to use this functionality"
+        )
+
+      %Rambla.Connection{
+        conn: %Rambla.Connection.Config{},
+        conn_type: __MODULE__,
+        conn_pid: nil,
+        conn_params: params,
+        errors: [error]
+      }
+    end
+  end
 end
