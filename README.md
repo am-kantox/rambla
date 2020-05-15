@@ -26,6 +26,8 @@ end
 
 ## Changelog
 
+-  **`0.9.0`** Divorce `Rambla` with `AMQP` and `Envio`
+-  **`0.8.0`** `Rambla.raw/2` returning a worker from pool
 -  **`0.6.5`** `RabbitMQ` → `bind`, `unbind`
 -  **`0.6.3`** Auto-reenable tasks
 -  **`0.6.2`** code cleanup, DRY
