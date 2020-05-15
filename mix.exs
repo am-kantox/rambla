@@ -39,11 +39,11 @@ defmodule Rambla.MixProject do
 
     Supported back-ends
 
-    - Rabbit (through [Amqp](https://hexdocs.pm/amqp/))
-    - Redis (through [Redix](https://hexdocs.pm/redix))
-    - Http (through [:httpc](http://erlang.org/doc/man/httpc.html))
-    - Smtp (through [:gen_smtp](https://hexdocs.pm/gen_smtp))
-    - Slack (through [Envío](https://hexdocs.pm/envio))
+    - Rabbit ([Amqp](https://hexdocs.pm/amqp/))
+    - Redis ([Redix](https://hexdocs.pm/redix))
+    - Http ([:httpc](http://erlang.org/doc/man/httpc.html))
+    - Smtp ([:gen_smtp](https://hexdocs.pm/gen_smtp))
+    - Slack ([Envío](https://hexdocs.pm/envio))
     """
   end
 
