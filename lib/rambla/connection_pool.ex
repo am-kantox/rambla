@@ -2,11 +2,11 @@ defmodule Rambla.Envio do
   @moduledoc false
   if Application.get_env(:rambla, :notify_broadcast, true) and
        match?({:module, Envio.Publisher}, Code.ensure_compiled(Envio.Publisher)) do
-    defmacro use() do
+    defmacro use do
       quote do: use(Envio.Publisher)
     end
   else
-    defmacro use() do
+    defmacro use do
       quote do: defmacrop(broadcast(_, _), do: :ok)
     end
   end

@@ -20,7 +20,9 @@ defmodule Rambla.MixProject do
       docs: docs(),
       dialyzer: [
         plt_file: {:no_warn, ".dialyzer/plts/dialyzer.plt"},
-        plt_add_apps: [:amqp, :redix, :httpc, :inets, :ssl, :mix, :gen_smtp_client],
+        plt_add_deps: :transitive,
+        plt_add_apps: [:amqp, :redix, :inets, :ssl, :mix],
+        list_unused_filters: true,
         ignore_warnings: ".dialyzer/ignore.exs"
       ]
     ]
