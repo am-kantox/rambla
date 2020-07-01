@@ -11,6 +11,9 @@ defmodule Rambla do
   - `:name` the name of the worker; defaults to the module name
   - `:options` options to be passed to the worker initialization in `:poolboy`, like `[size: 5, max_overflow: 300]`
   - `:params` arguments to be passed to the worker during initialization
+
+  In the static configuration (through `config/env.exs`,) pool options might be given
+  through `pool: keyword()` parameter.
   """
 
   @doc """

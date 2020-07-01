@@ -29,10 +29,17 @@ defmodule Rambla.ConnectionPool do
   @spec start_pools :: [DynamicSupervisor.on_start_child()]
   def start_pools do
     pools =
-      for {k, v} <- Application.get_env(:rambla, :pools, []),
-          do: {k, Keyword.merge(Application.get_env(:rambla, k, []), v)}
+      for {k, v} <- Application.get_env(:rambla, :pools, []) do
+        {options, params} =
+          :rambla
+          |> Application.get_env(k, [])
+          |> Keyword.merge(v)
+          |> Keyword.pop(:pool, [])
 
-    start_pools(for {k, v} <- pools, do: {fix_type(k), params: v})
+        {fix_type(k), params: params, options: options}
+      end
+
+    start_pools(pools)
   end
 
   @spec start_pools(%{required(atom()) => keyword()} | keyword()) :: [
