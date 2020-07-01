@@ -36,6 +36,19 @@ defmodule RamblaTest do
     assert {:empty, _} = AMQP.Basic.get(chan, "rambla-queue")
   end
 
+  test "accepts keywords as opts" do
+    Rambla.publish(Rambla.Amqp, %{foo: 42}, exchange: "rambla-exchange")
+
+    %Rambla.Connection{conn: %{chan: %AMQP.Channel{} = chan}} =
+      Rambla.ConnectionPool.conn(Rambla.Amqp)
+
+    assert {:ok, "{\"foo\":42}", %{delivery_tag: tag} = _meta} =
+             AMQP.Basic.get(chan, "rambla-queue")
+
+    assert :ok = AMQP.Basic.ack(chan, tag)
+    assert {:empty, _} = AMQP.Basic.get(chan, "rambla-queue")
+  end
+
   test "works with rabbit: bulk update" do
     Rambla.ConnectionPool.publish(Rambla.Amqp, [%{bar: 42}, %{baz: 42}], %{
       queue: "rambla-queue-2",

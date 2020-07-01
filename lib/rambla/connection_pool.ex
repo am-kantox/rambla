@@ -63,10 +63,13 @@ defmodule Rambla.ConnectionPool do
   @spec publish(
           type :: atom(),
           messages :: Rambla.Connection.message() | Rambla.Connection.messages(),
-          opts :: map()
+          opts :: map() | keyword()
         ) ::
           Rambla.Connection.outcome() | Rambla.Connection.outcomes()
   def publish(type, messages, opts \\ %{})
+
+  def publish(type, message, opts) when is_list(opts),
+    do: publish(type, message, Map.new(opts))
 
   def publish(type, message, opts) when is_map(message) or is_binary(message) do
     case publish(type, [message], opts) do
