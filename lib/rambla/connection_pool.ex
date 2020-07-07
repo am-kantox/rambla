@@ -97,7 +97,7 @@ defmodule Rambla.ConnectionPool do
         timeout
       )
 
-    broadcast(type, %{message: messages, response: response})
+    broadcast(:rambla, %{type: type, message: messages, response: response})
     response
   end
 

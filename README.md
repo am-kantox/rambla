@@ -26,6 +26,7 @@ end
 
 ## Changelog
 
+-  **`0.9.3`** Envío broadcast to `:rambla` channel, with a type
 -  **`0.9.0`** Divorce `Rambla` with `AMQP` and `Envio`
 -  **`0.8.0`** `Rambla.raw/2` returning a worker from pool
 -  **`0.6.5`** `RabbitMQ` → `bind`, `unbind`
