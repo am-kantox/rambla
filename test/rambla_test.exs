@@ -15,7 +15,8 @@ defmodule RamblaTest do
     ]
 
     [ok: _, ok: _, ok: _] = Rambla.ConnectionPool.start_pools(opts)
-    {:ok, _pid} = Rambla.Support.Subscriber.start_link()
+
+    Application.ensure_all_started(:telemetria)
 
     :ok
   end

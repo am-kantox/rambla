@@ -10,6 +10,7 @@ defmodule Rambla.MixProject do
       version: @version,
       elixir: "~> 1.9",
       elixirc_paths: elixirc_paths(Mix.env()),
+      compilers: compilers(Mix.env()),
       start_permanent: Mix.env() == :prod,
       package: package(),
       aliases: aliases(),
@@ -69,8 +70,8 @@ defmodule Rambla.MixProject do
       # optional backends
       {:amqp, "~> 1.2", optional: true},
       {:redix, "~> 0.10", optional: true},
-      {:envio, "~> 0.4", optional: true},
       {:gen_smtp, "~> 0.15", optional: true},
+      {:telemetria, "~> 0.4", optional: true},
 
       # dev, test
       {:credo, "~> 1.0", only: [:dev, :ci], runtime: false},
@@ -107,4 +108,7 @@ defmodule Rambla.MixProject do
   defp elixirc_paths(:test), do: ["lib", "test/support"]
   defp elixirc_paths(:ci), do: ["lib", "test/support"]
   defp elixirc_paths(_), do: ["lib"]
+
+  defp compilers(:test), do: [:telemetria | Mix.compilers()]
+  defp compilers(_), do: Mix.compilers()
 end

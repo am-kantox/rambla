@@ -1,23 +1,14 @@
-defmodule Rambla.Envio do
-  @moduledoc false
-  if Application.get_env(:rambla, :notify_broadcast, true) and
-       match?({:module, Envio.Publisher}, Code.ensure_compiled(Envio.Publisher)) do
-    defmacro use do
-      quote do: use(Envio.Publisher)
-    end
-  else
-    defmacro use do
-      quote do: defmacrop(broadcast(_, _), do: :ok)
-    end
-  end
-end
-
 defmodule Rambla.ConnectionPool do
   @moduledoc false
-  use DynamicSupervisor
 
-  require Rambla.Envio
-  Rambla.Envio.use()
+  @with_telemetria :telemetria
+                   |> Application.get_env(:applications, [])
+                   |> Keyword.keys()
+                   |> Enum.member?(:rambla) and
+                     match?({:module, Telemetria}, Code.ensure_compiled(Telemetria))
+
+  if @with_telemetria, do: use(Telemetria, action: :import)
+  use DynamicSupervisor
 
   @spec start_link(opts :: keyword) :: Supervisor.on_start()
   def start_link(opts \\ []),
@@ -79,26 +70,29 @@ defmodule Rambla.ConnectionPool do
     do: publish(type, message, Map.new(opts))
 
   def publish(type, message, opts) when is_map(message) or is_binary(message) do
-    case publish(type, [message], opts) do
+    case do_publish(type, [message], opts) do
       %{oks: [result], errors: []} -> {:ok, result}
       %{oks: [], errors: [reason]} -> {:error, reason}
       other -> other
     end
   end
 
-  def publish(type, messages, opts) when is_list(messages) do
+  def publish(type, messages, opts) when is_list(messages),
+    do: do_publish(type, messages, opts)
+
+  if @with_telemetria, do: @telemetria(level: :info)
+
+  @spec do_publish(type :: atom(), messages :: Rambla.Connection.messages(), opts :: map()) ::
+          Rambla.Connection.outcome() | Rambla.Connection.outcomes()
+  defp do_publish(type, messages, opts) when is_list(messages) do
     type = fix_type(type)
     timeout = messages |> length() |> timeout()
 
-    response =
-      :poolboy.transaction(
-        type,
-        &GenServer.call(&1, {:publish, messages, opts}, timeout),
-        timeout
-      )
-
-    broadcast(:rambla, %{type: type, message: messages, response: response})
-    response
+    :poolboy.transaction(
+      type,
+      &GenServer.call(&1, {:publish, messages, opts}, timeout),
+      timeout
+    )
   end
 
   @spec conn(type :: atom()) :: Rambla.Connection.Config.t()

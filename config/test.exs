@@ -1,5 +1,7 @@
 import Config
 
+config :telemetria, applications: [rambla: true]
+
 config :rambla,
   amqp: [
     host: System.get_env("RABBITMQ_HOST", "127.0.0.1"),
