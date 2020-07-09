@@ -1,13 +1,7 @@
 defmodule Rambla.ConnectionPool do
   @moduledoc false
 
-  @with_telemetria :telemetria
-                   |> Application.get_env(:applications, [])
-                   |> Keyword.keys()
-                   |> Enum.member?(:rambla) and
-                     match?({:module, Telemetria}, Code.ensure_compiled(Telemetria))
-
-  if @with_telemetria, do: use(Telemetria, action: :import)
+  use Rambla.Telemetria
   use DynamicSupervisor
 
   @spec start_link(opts :: keyword) :: Supervisor.on_start()
@@ -80,7 +74,7 @@ defmodule Rambla.ConnectionPool do
   def publish(type, messages, opts) when is_list(messages),
     do: do_publish(type, messages, opts)
 
-  if @with_telemetria, do: @telemetria(level: :info)
+  if Rambla.Telemetria.use?(), do: @telemetria(level: :info)
 
   @spec do_publish(type :: atom(), messages :: Rambla.Connection.messages(), opts :: map()) ::
           Rambla.Connection.outcome() | Rambla.Connection.outcomes()
