@@ -36,21 +36,28 @@ config :rambla, :pools,
       username: System.get_env("RABBITMQ_USERNAME", "guest"),
       password: System.get_env("RABBITMQ_PASSWORD", "guest")
       virtual_host: System.get_env("RABBITMQ_VHOST", "/"),
-      x_message_ttl: "4000"]
+      x_message_ttl: "4000"
+    ]
   ],
   http: [
-    host: System.get_env("RAMBLA_HTTP_HOST", "127.0.0.1"),
-    port: String.to_integer(System.get_env("RAMBLA_HTTP_PORT", "80"))
+    options: [size: 25],
+    params: [
+      host: System.get_env("RAMBLA_HTTP_HOST", "127.0.0.1"),
+      port: String.to_integer(System.get_env("RAMBLA_HTTP_PORT", "80"))
+    ]
   ],
   smtp: [
-    relay: System.get_env("RAMBLA_SMTP_RELAY", "smtp.gmail.com"),
-    username: System.get_env("RAMBLA_SMTP_USERNAME"),
-    password: System.get_env("RAMBLA_SMTP_PASSWORD"),
-    auth: :always,
-    ssl: true,
-    hostname: System.get_env("RAMBLA_SMTP_HOSTNAME"),
-    retries: 3,
-    from: %{"Aleksei Matiushkin" => "matiouchkine@gmail.com"}
+    options: [max_overflow: 10],
+    params: [
+      relay: System.get_env("RAMBLA_SMTP_RELAY", "smtp.gmail.com"),
+      username: System.get_env("RAMBLA_SMTP_USERNAME"),
+      password: System.get_env("RAMBLA_SMTP_PASSWORD"),
+      auth: :always,
+      ssl: true,
+      hostname: System.get_env("RAMBLA_SMTP_HOSTNAME"),
+      retries: 3,
+      from: %{"Aleksei Matiushkin" => "aleksei@example.com"}
+    ]
   ]
 ```
 
