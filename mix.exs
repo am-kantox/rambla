@@ -92,12 +92,12 @@ defmodule Rambla.MixProject do
 
   defp docs() do
     [
-      main: "readme",
+      main: "getting-started",
       source_ref: "v#{@version}",
       source_url: "https://github.com/am-kantox/#{@app}",
       canonical: "http://hexdocs.pm/#{@app}",
       logo: "stuff/logo-48x48.png",
-      extras: ["README.md"],
+      extras: ["README.md", "stuff/getting-started.md"],
       groups_for_modules: [
         Backends: [Rambla.Amqp, Rambla.Http, Rambla.Redis, Rambla.Smtp],
         Expections: [Rambla.Exception]

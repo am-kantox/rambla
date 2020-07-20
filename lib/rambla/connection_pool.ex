@@ -19,7 +19,7 @@ defmodule Rambla.ConnectionPool do
           :rambla
           |> Application.get_env(k, [])
           |> Keyword.merge(v)
-          |> Keyword.pop(:pool, [])
+          |> Keyword.pop(:options, [])
 
         {fix_type(k), params: params, options: options}
       end
