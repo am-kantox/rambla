@@ -30,10 +30,6 @@ jobs:
         MIX_ENV=test mix local.rebar --force
         MIX_ENV=test mix local.hex --force
         MIX_ENV=test mix do deps.get, deps.compile, compile
-    - name: Declare queues
-      run: |
-        MIX_ENV=test mix rambla.rabbit.queue declare rambla-queue
-        MIX_ENV=test mix rambla.rabbit.queue declare rambla-queue-2
     - name: Run All Tests
       run: |
         MIX_ENV=test mix test
