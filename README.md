@@ -1,6 +1,6 @@
-# Rambla
+# Rambla    [![Kantox ❤ OSS](https://img.shields.io/badge/❤-kantox_oss-informational.svg)](https://kantox.com/)  ![Test](https://github.com/am-kantox/rambla/workflows/Test/badge.svg)  ![Dialyzer](https://github.com/am-kantox/rambla/workflows/Dialyzer/badge.svg)
 
-![Test](https://github.com/am-kantox/rambla/workflows/Test/badge.svg)  ![Dialyzer](https://github.com/am-kantox/rambla/workflows/Dialyzer/badge.svg)  **Easy publishing to many different targets**
+**Easy publishing to many different targets**
 
 ## Installation
 
@@ -26,19 +26,19 @@ end
 
 ## Changelog
 
--  **`0.10.0`** Envío → Telemetria
--  **`0.9.3`** Envío broadcast to `:rambla` channel, with a type
--  **`0.9.0`** Divorce `Rambla` with `AMQP` and `Envio`
--  **`0.8.0`** `Rambla.raw/2` returning a worker from pool
--  **`0.6.5`** `RabbitMQ` → `bind`, `unbind`
--  **`0.6.3`** Auto-reenable tasks
--  **`0.6.2`** code cleanup, DRY
--  **`0.6.0`** `mix` tasks to deal with RabbitMQ
--  **`0.5.2`** graceful timeout, fix for optional `Envio` does not included
--  **`0.5.1`** performance fixes, do not require `queue` in call to Rabbit `publish/2`, `declare?: false` to not declare exchange every time
--  **`0.5.0`** bulk publisher
--  **`0.4.0`** `SMTP` publisher
--  **`0.3.0`** `HTTP` publisher
+- **`0.10.0`** Envío → Telemetria
+- **`0.9.3`** Envío broadcast to `:rambla` channel, with a type
+- **`0.9.0`** Divorce `Rambla` with `AMQP` and `Envio`
+- **`0.8.0`** `Rambla.raw/2` returning a worker from pool
+- **`0.6.5`** `RabbitMQ` → `bind`, `unbind`
+- **`0.6.3`** Auto-reenable tasks
+- **`0.6.2`** code cleanup, DRY
+- **`0.6.0`** `mix` tasks to deal with RabbitMQ
+- **`0.5.2`** graceful timeout, fix for optional `Envio` does not included
+- **`0.5.1`** performance fixes, do not require `queue` in call to Rabbit `publish/2`, `declare?: false` to not declare exchange every time
+- **`0.5.0`** bulk publisher
+- **`0.4.0`** `SMTP` publisher
+- **`0.3.0`** `HTTP` publisher
 
 ## Documentation
 
