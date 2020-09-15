@@ -14,6 +14,10 @@ defmodule RamblaTest do
       {Rambla.Http, params: Application.fetch_env!(:rambla, :pools)[:http]}
     ]
 
+    Application.ensure_all_started(:amqp)
+    Application.ensure_all_started(:phoenix_pubsub)
+    Application.ensure_all_started(:envio)
+
     [ok: _, ok: _, ok: _] = Rambla.ConnectionPool.start_pools(opts)
 
     Application.ensure_all_started(:telemetria)
