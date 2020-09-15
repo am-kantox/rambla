@@ -26,7 +26,8 @@ end
 
 ## Changelog
 
-- **`0.10.0`** Envío → Telemetria
+- **`0.11.1`** Optional Boundary support for Telemetria
+- **`0.11.0`** Envío → Telemetria
 - **`0.9.3`** Envío broadcast to `:rambla` channel, with a type
 - **`0.9.0`** Divorce `Rambla` with `AMQP` and `Envio`
 - **`0.8.0`** `Rambla.raw/2` returning a worker from pool

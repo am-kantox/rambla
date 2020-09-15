@@ -12,7 +12,7 @@ defmodule Rambla.Telemetria do
 
   @use @options != [] and match?({:module, Telemetria}, Code.ensure_compiled(Telemetria))
 
-  use Boundary
+  if match?({:module, Boundary}, Code.ensure_compiled(Boundary)), do: use(Boundary)
 
   defmacro __using__(opts \\ []),
     do: if(@use, do: quote(do: use(Telemetria, unquote(opts))), else: :ok)
