@@ -63,6 +63,7 @@ defmodule Rambla.MixProject do
 
   defp deps do
     [
+      {:boundary, "~> 0.6"},
       {:jason, "~> 1.0"},
       {:poolboy, "~> 1.5"},
       {:plug, "~> 1.9"},
