@@ -67,11 +67,12 @@ defmodule Rambla.MixProject do
       {:jason, "~> 1.0"},
       {:poolboy, "~> 1.5"},
       {:plug, "~> 1.9"},
+      {:ranch, "~> 1.7 or ~> 2.0", override: true},
 
       # optional backends
       {:amqp, "~> 1.2", optional: true},
-      {:redix, "~> 0.10", optional: true},
-      {:gen_smtp, "~> 0.15", optional: true},
+      {:redix, "~> 1.0", optional: true},
+      {:gen_smtp, "~> 1.0", optional: true},
       {:telemetria, "~> 0.4", optional: true},
 
       # dev, test
