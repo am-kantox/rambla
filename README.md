@@ -26,6 +26,7 @@ end
 
 ## Changelog
 
+- **`0.12.0`** `Rambla.publish_synch/3` to avoid pool while publishing
 - **`0.11.1`** Optional Boundary support for Telemetria
 - **`0.11.0`** Envío → Telemetria
 - **`0.9.3`** Envío broadcast to `:rambla` channel, with a type

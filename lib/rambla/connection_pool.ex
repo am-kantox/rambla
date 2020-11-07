@@ -11,7 +11,13 @@ defmodule Rambla.ConnectionPool do
   @impl DynamicSupervisor
   def init(opts), do: DynamicSupervisor.init(Keyword.put_new(opts, :strategy, :one_for_one))
 
-  @spec start_pools :: [DynamicSupervisor.on_start_child()]
+  @spec start_pools :: [
+          [
+            {:pool, DynamicSupervisor.on_start_child()}
+            | {:synch, DynamicSupervisor.on_start_child()}
+          ]
+        ]
+
   def start_pools do
     pools =
       for {k, v} <- Application.get_env(:rambla, :pools, []) do
@@ -69,7 +75,7 @@ defmodule Rambla.ConnectionPool do
     end)
   end
 
-  @spec pools :: [{:undefined, pid() | :restarting, :worker | :supervisor, [:poolboy]}]
+  @spec pools :: [{:undefined, :restarting | pid(), :supervisor | :worker, atom()}]
   def pools, do: DynamicSupervisor.which_children(Rambla.ConnectionPool)
 
   @spec publish(
