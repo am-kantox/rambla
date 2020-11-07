@@ -28,23 +28,43 @@ defmodule Rambla.ConnectionPool do
   end
 
   @spec start_pools(%{required(atom()) => keyword()} | keyword()) :: [
-          DynamicSupervisor.on_start_child()
+          [
+            {:pool, DynamicSupervisor.on_start_child()},
+            {:synch, DynamicSupervisor.on_start_child()}
+          ]
         ]
   def start_pools(opts) do
     Enum.map(opts, fn {type, opts} ->
+      opts =
+        case opts do
+          %{} = opts -> Map.to_list(opts)
+          opts when is_list(opts) -> opts
+        end
+
+      type = fix_type(type)
+
       with {options, opts} <- Keyword.pop(opts, :options, []),
            {worker_type, opts} <- Keyword.pop(opts, :type, :local),
-           {worker_name, opts} <- Keyword.pop(opts, :name, type),
            {params, []} <- Keyword.pop(opts, :params, []) do
         worker =
           Keyword.merge(
             options,
-            name: {worker_type, worker_name},
+            name: {worker_type, type},
             worker_module: Rambla.Connection
           )
 
-        child_spec = :poolboy.child_spec(Rambla.Connection, worker, {worker_name, params})
-        DynamicSupervisor.start_child(Rambla.ConnectionPool, child_spec)
+        child_spec = :poolboy.child_spec(Rambla.Connection, worker, {type, params})
+
+        conn_opts =
+          params
+          |> Keyword.put(:singleton, Module.concat(type, "Synch"))
+          |> Keyword.put(:conn_type, type)
+
+        [
+          pool: DynamicSupervisor.start_child(Rambla.ConnectionPool, child_spec),
+          synch:
+            DynamicSupervisor.start_child(Rambla.ConnectionPool, {Rambla.Connection, conn_opts})
+        ]
       end
     end)
   end
@@ -87,6 +107,21 @@ defmodule Rambla.ConnectionPool do
       &GenServer.call(&1, {:publish, messages, opts}, timeout),
       timeout
     )
+  end
+
+  @spec publish_synch(
+          type :: atom(),
+          messages :: Rambla.Connection.message() | Rambla.Connection.messages(),
+          opts :: map() | keyword()
+        ) ::
+          Rambla.Connection.outcome() | Rambla.Connection.outcomes()
+  def publish_synch(type, message, opts \\ %{}) do
+    singleton =
+      type
+      |> fix_type()
+      |> Module.concat("Synch")
+
+    GenServer.call(singleton, {:publish, message, opts})
   end
 
   @spec conn(type :: atom()) :: Rambla.Connection.Config.t()

@@ -18,7 +18,11 @@ defmodule RamblaTest do
     Application.ensure_all_started(:phoenix_pubsub)
     Application.ensure_all_started(:envio)
 
-    [ok: _, ok: _, ok: _] = Rambla.ConnectionPool.start_pools(opts)
+    [
+      [pool: {:ok, _}, synch: {:ok, _}],
+      [pool: {:ok, _}, synch: {:ok, _}],
+      [pool: {:ok, _}, synch: {:ok, _}]
+    ] = Rambla.ConnectionPool.start_pools(opts)
 
     Application.ensure_all_started(:telemetria)
 
@@ -35,6 +39,22 @@ defmodule RamblaTest do
       Rambla.ConnectionPool.conn(Rambla.Amqp)
 
     assert {:ok, "{\"foo\":42}", %{delivery_tag: tag} = _meta} =
+             AMQP.Basic.get(chan, "rambla-queue")
+
+    assert :ok = AMQP.Basic.ack(chan, tag)
+    assert {:empty, _} = AMQP.Basic.get(chan, "rambla-queue")
+  end
+
+  test "works with rabbit (synch)" do
+    Rambla.ConnectionPool.publish_synch(Rambla.Amqp, %{synch: 94}, %{
+      queue: "rambla-queue",
+      exchange: "rambla-exchange"
+    })
+
+    %Rambla.Connection{conn: %{chan: %AMQP.Channel{} = chan}} =
+      Rambla.ConnectionPool.conn(Rambla.Amqp)
+
+    assert {:ok, "{\"synch\":94}", %{delivery_tag: tag} = _meta} =
              AMQP.Basic.get(chan, "rambla-queue")
 
     assert :ok = AMQP.Basic.ack(chan, tag)

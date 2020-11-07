@@ -38,6 +38,17 @@ defmodule Rambla do
   defdelegate publish(target, message, opts), to: Rambla.ConnectionPool
 
   @doc """
+  Publishes the message to the destination synchronously, avoiding the pool.
+  """
+  defdelegate publish_synch(target, message), to: Rambla.ConnectionPool
+
+  @doc """
+  Publishes the message to the destination synchronously, avoiding the pool.
+  Unlike `publish_synch/2`, allows to specify additional options per request.
+  """
+  defdelegate publish_synch(target, message, opts), to: Rambla.ConnectionPool
+
+  @doc """
   Executes any arbitrary function in the context of one of workers in the
   respective connection pool for the target.
 

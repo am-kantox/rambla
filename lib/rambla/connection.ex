@@ -69,18 +69,34 @@ defmodule Rambla.Connection do
   use GenServer
   require Logger
 
-  @reconnect_interval 10_000
-  @keep_errors 20
+  @reconnect_interval 100
+  @keep_errors 2
 
   @doc """
   Accepts options for the underlying connection (those will be passed to `connect/1`.)
   """
   def start_link({conn_type, opts}),
-    do:
-      GenServer.start_link(__MODULE__, %Rambla.Connection{
+    do: start_link(Keyword.put(opts, :conn_type, conn_type))
+
+  def start_link(opts) when is_list(opts) do
+    {[{:conn_type, conn_type}], opts} = Keyword.split(opts, [:conn_type])
+    {name, opts} = Keyword.pop(opts, :singleton)
+
+    params =
+      case name do
+        nil -> []
+        mod when is_atom(mod) -> [name: mod]
+      end
+
+    GenServer.start_link(
+      __MODULE__,
+      %Rambla.Connection{
         conn_type: conn_type,
         conn_params: opts
-      })
+      },
+      params
+    )
+  end
 
   @doc false
   @impl GenServer
@@ -149,6 +165,17 @@ defmodule Rambla.Connection do
 
     {:reply, result,
      %Rambla.Connection{state | errors: Enum.take(errors ++ state.errors, @keep_errors)}}
+  end
+
+  @impl GenServer
+  def handle_call(
+        {:publish, message, opts},
+        _,
+        %Rambla.Connection{conn_type: conn_type, conn: conn} = state
+      )
+      when is_binary(message) or is_map(message) do
+    conn = %Config{conn | opts: Map.merge(conn.opts, opts)}
+    {:reply, {:ok, conn_type.publish(conn, message)}, state}
   end
 
   @doc false
