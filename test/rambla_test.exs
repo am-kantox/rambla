@@ -1,5 +1,5 @@
 defmodule RamblaTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: false
   doctest Rambla
 
   setup_all do
@@ -47,18 +47,18 @@ defmodule RamblaTest do
 
   test "works with rabbit (synch)" do
     Rambla.ConnectionPool.publish_synch(Rambla.Amqp, %{synch: 94}, %{
-      queue: "rambla-queue",
-      exchange: "rambla-exchange"
+      queue: "rambla-queue-3",
+      exchange: "rambla-exchange-3"
     })
 
     %Rambla.Connection{conn: %{chan: %AMQP.Channel{} = chan}} =
       Rambla.ConnectionPool.conn(Rambla.Amqp)
 
     assert {:ok, "{\"synch\":94}", %{delivery_tag: tag} = _meta} =
-             AMQP.Basic.get(chan, "rambla-queue")
+             AMQP.Basic.get(chan, "rambla-queue-3")
 
     assert :ok = AMQP.Basic.ack(chan, tag)
-    assert {:empty, _} = AMQP.Basic.get(chan, "rambla-queue")
+    assert {:empty, _} = AMQP.Basic.get(chan, "rambla-queue-3")
   end
 
   test "accepts keywords as opts" do

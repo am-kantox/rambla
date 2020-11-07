@@ -10,8 +10,6 @@ defmodule Rambla.Redis do
   @impl Rambla.Connection
 
   def connect(params) when is_list(params) do
-    IO.inspect({@with_redis, params})
-
     if not @with_redis or is_nil(params[:host]),
       do:
         raise(Rambla.Exceptions.Connection,
