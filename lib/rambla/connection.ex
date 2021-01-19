@@ -59,6 +59,8 @@ defmodule Rambla.Connection do
             opts: %{},
             errors: []
 
+  @derive {Inspect, except: [:conn_params]}
+
   @doc "Connects to the remote service and returns a connection object back"
   @callback connect(params :: keyword()) :: t()
   @doc "Publishes the message to the remote service using connection provided"
@@ -117,8 +119,10 @@ defmodule Rambla.Connection do
         {:noreply, state}
 
       state ->
+        safe_params = Keyword.drop(conn_params, [:password])
+
         Logger.error("""
-        [🖇️] Failed to connect with params #{inspect(conn_params)}.
+        [🖇️] Failed to connect with params #{inspect(safe_params)}.
             State: #{inspect(state)}.
             Retrying...
         """)
