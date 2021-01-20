@@ -122,7 +122,7 @@ defmodule RamblaTest do
   end
 
   defp amqp_wait(chan, queue, expected, times \\ 10)
-  defp amqp_wait(chan, queue, expected, times) when times <= 0, do: {false, :timeout}
+  defp amqp_wait(_chan, _queue, _expected, times) when times <= 0, do: {false, :timeout}
 
   defp amqp_wait(chan, queue, expected, times) do
     case AMQP.Basic.get(chan, queue) do

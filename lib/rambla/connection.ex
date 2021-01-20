@@ -52,14 +52,14 @@ defmodule Rambla.Connection do
             :errors => [Rambla.Exception.t()]
           }
 
+  @derive {Inspect, except: [:conn_params]}
+
   defstruct conn: nil,
             conn_params: [],
             conn_type: nil,
             conn_pid: nil,
             opts: %{},
             errors: []
-
-  @derive {Inspect, except: [:conn_params]}
 
   @doc "Connects to the remote service and returns a connection object back"
   @callback connect(params :: keyword()) :: t()
