@@ -7,19 +7,27 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    name: OTP ${{matrix.otp}} / Elixir ${{matrix.elixir}}
+    env:
+      MIX_ENV: ci
+    name: OTP ${{matrix.pair.otp}} / Elixir ${{matrix.pair.elixir}}
     strategy:
+      fail-fast: false
       matrix:
-        otp: ["22.2", "23.0"]
-        elixir: [1.10.4]
+        include:
+          - pair:
+              otp: 20.3.8.26
+              elixir: 1.8.2
+          - pair:
+              otp: 23.2.5
+              elixir: 1.11.3
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-elixir@v1
+      - uses: erlef/setup-elixir@v1
         with:
-          otp-version: ${{matrix.otp}}
-          elixir-version: ${{matrix.elixir}}
+          otp-version: ${{matrix.pair.otp}}
+          elixir-version: ${{matrix.pair.elixir}}
       - run: |
-          MIX_ENV=ci epmd -daemon
-          MIX_ENV=ci mix deps.unlock --all
-          MIX_ENV=ci mix deps.get
-          MIX_ENV=ci mix quality.ci
+          epmd -daemon
+          mix deps.unlock --all
+          mix deps.get
+          mix quality.ci

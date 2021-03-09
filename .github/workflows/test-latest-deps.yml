@@ -5,11 +5,9 @@ on: [pull_request]
 jobs:
   test:
     runs-on: ubuntu-latest
-    name: OTP ${{matrix.otp}} / Elixir ${{matrix.elixir}}
-    strategy:
-      matrix:
-        otp: [22.3, 23.1.1]
-        elixir: [1.10.4, 1.11.1]
+    env:
+      MIX_ENV: test
+    name: OTP ${{matrix.pair.otp}} / Elixir ${{matrix.pair.elixir}}
     services:
       rabbitmq:
         image: rabbitmq
@@ -19,20 +17,30 @@ jobs:
         image: redis
         ports:
           - 6379/tcp
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - pair:
+              otp: 20.3.8.26
+              elixir: 1.8.2
+          - pair:
+              otp: 23.2.5
+              elixir: 1.11.3
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-elixir@v1
+      - uses: erlef/setup-elixir@v1
         with:
-          otp-version: ${{matrix.otp}}
-          elixir-version: ${{matrix.elixir}}
+          otp-version: ${{matrix.pair.otp}}
+          elixir-version: ${{matrix.pair.elixir}}
       - name: Install Dependencies
         run: |
-          MIX_ENV=test mix local.rebar --force
-          MIX_ENV=test mix local.hex --force
-          MIX_ENV=test mix do deps.unlock --all, deps.get, deps.compile, compile
+          mix local.rebar --force
+          mix local.hex --force
+          mix do deps.unlock --all, deps.get, deps.compile, compile
       - name: Run All Tests
         run: |
-          MIX_ENV=test mix test
+          mix test
         env:
           RABBITMQ_HOST: localhost
           RABBITMQ_PORT: ${{job.services.rabbitmq.ports[5672]}}
