@@ -31,7 +31,7 @@ defmodule Rambla.MixProject do
 
   def application do
     [
-      extra_applications: [:lager, :logger, :poolboy, :inets, :ssl],
+      extra_applications: [:lager, :logger, :inets, :ssl],
       mod: {Rambla.Application, []}
     ]
   end
@@ -65,19 +65,19 @@ defmodule Rambla.MixProject do
     [
       {:boundary, "~> 0.6"},
       {:jason, "~> 1.0"},
-      {:poolboy, "~> 1.5"},
+      {:tarearbol, "~> 1.4"},
       {:plug, "~> 1.9"},
       {:ranch, "~> 1.7 or ~> 2.0"},
 
       # optional backends
-      {:amqp, "~> 1.2", optional: true},
+      {:amqp, "~> 1.2 or ~> 2.0", optional: true},
       {:redix, "~> 1.0", optional: true},
       {:gen_smtp, "~> 0.4 or ~> 1.0", optional: true},
       {:telemetria, "~> 0.4", optional: true},
 
       # dev, test
       {:credo, "~> 1.0", only: [:dev, :ci], runtime: false},
-      {:dialyxir, "~> 1.0.0-rc.6", only: [:dev, :ci], runtime: false},
+      {:dialyxir, "~> 1.0", only: [:dev, :ci], runtime: false},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
     ]
   end
