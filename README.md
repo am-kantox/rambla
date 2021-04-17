@@ -26,6 +26,8 @@ end
 
 ## Changelog
 
+- **`0.14.0`** Use Tarearbol.Pool to manage channels behind AMQP connections
+- **`0.13.0`** Filter out connection params from logs
 - **`0.12.0`** `Rambla.publish_synch/3` to avoid pool while publishing
 - **`0.11.1`** Optional Boundary support for Telemetria
 - **`0.11.0`** Envío → Telemetria
