@@ -36,25 +36,17 @@ defmodule Rambla.Amqp do
     @amqp_pool_size Application.get_env(:rambla, :amqp_pool_size, 32)
     use Tarearbol.Pool, pool_size: @amqp_pool_size
 
-    @spec publish(%Rambla.Connection.Config{}, binary() | map()) ::
-            {:ok, map()} | {:error, any()}
-    def publish(%Rambla.Connection.Config{} = cfg, %{} = message),
-      do: publish(cfg, Jason.encode!(message))
+    @spec publish(%Rambla.Connection.Config{}, binary() | map() | list()) ::
+            {:ok | :replace, Rambla.Connection.Config.t()}
+    defsynch publish(%Rambla.Connection.Config{conn: conn, opts: opts}, message) do
+      message =
+        case message do
+          message when is_binary(message) -> message
+          %{} = message -> Jason.encode!(message)
+          [{_, _} | _] = message -> message |> Map.new() |> Jason.encode!()
+          message -> inspect(message)
+        end
 
-    def publish(%Rambla.Connection.Config{} = cfg, message)
-        when is_binary(message),
-        do: do_publish(cfg, message)
-
-    @spec queue!(chan :: AMQP.Channel.t(), map()) :: :ok
-    defp queue!(chan, %{queue: queue, exchange: exchange}) do
-      with {:ok, %{consumer_count: _, message_count: _, queue: ^queue}} <-
-             apply(AMQP.Queue, :declare, [chan, queue]),
-           do: apply(AMQP.Queue, :bind, [chan, queue, exchange])
-    end
-
-    defp queue!(_, %{exchange: _exchange}), do: :ok
-
-    defsynch do_publish(%Rambla.Connection.Config{conn: conn, opts: opts}, message) do
       {_, %{chan: %AMQP.Channel{} = chan}} =
         reply =
         case payload!() do
@@ -81,6 +73,15 @@ defmodule Rambla.Amqp do
 
       reply
     end
+
+    @spec queue!(chan :: AMQP.Channel.t(), map()) :: :ok
+    defp queue!(chan, %{queue: queue, exchange: exchange}) do
+      with {:ok, %{consumer_count: _, message_count: _, queue: ^queue}} <-
+             apply(AMQP.Queue, :declare, [chan, queue]),
+           do: apply(AMQP.Queue, :bind, [chan, queue, exchange])
+    end
+
+    defp queue!(_, %{exchange: _exchange}), do: :ok
   end
 
   @with_amqp match?({:module, _}, Code.ensure_compiled(AMQP.Channel))
@@ -105,21 +106,9 @@ defmodule Rambla.Amqp do
   end
 
   @impl Rambla.Connection
-  def publish(%Rambla.Connection.Config{} = conn, message) when is_binary(message) do
-    case Jason.decode(message) do
-      {:ok, term} -> publish(conn, term)
-      {:error, _} -> ChannelPool.publish(conn, message)
-    end
-  end
-
-  @impl Rambla.Connection
-  def publish(%Rambla.Connection.Config{} = conn, message) when is_list(message),
-    do: publish(conn, Map.new(message))
-
-  @impl Rambla.Connection
-  def publish(%Rambla.Connection.Config{} = cfg, message)
-      when is_map(message),
-      do: ChannelPool.publish(cfg, message)
+  def publish(%Rambla.Connection.Config{} = conn, message)
+      when is_binary(message) or is_list(message) or is_map(message),
+      do: ChannelPool.publish(conn, message)
 
   if @with_amqp do
     defp maybe_amqp(params) do
