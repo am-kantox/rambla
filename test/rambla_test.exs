@@ -35,14 +35,16 @@ defmodule RamblaTest do
       exchange: "rambla-exchange-1"
     })
 
-    %Rambla.Connection{conn: %{chan: %AMQP.Channel{} = chan}} =
+    %Rambla.Connection{conn: %{conn: %AMQP.Connection{} = conn}} =
       Rambla.ConnectionPool.conn(Rambla.Amqp)
 
+    {:ok, chan} = AMQP.Channel.open(conn)
     {result, tag} = amqp_wait(chan, "rambla-queue-1", "{\"foo\":42}")
 
     assert result
     assert :ok = AMQP.Basic.ack(chan, tag)
     assert {:empty, _} = AMQP.Basic.get(chan, "rambla-queue-1")
+    AMQP.Channel.close(chan)
   end
 
   test "works with rabbit (synch)" do
@@ -51,14 +53,16 @@ defmodule RamblaTest do
       exchange: "rambla-exchange-2"
     })
 
-    %Rambla.Connection{conn: %{chan: %AMQP.Channel{} = chan}} =
+    %Rambla.Connection{conn: %{conn: %AMQP.Connection{} = conn}} =
       Rambla.ConnectionPool.conn(Rambla.Amqp)
 
+    {:ok, chan} = AMQP.Channel.open(conn)
     {result, tag} = amqp_wait(chan, "rambla-queue-2", "{\"synch\":94}")
 
     assert result
     assert :ok = AMQP.Basic.ack(chan, tag)
     assert {:empty, _} = AMQP.Basic.get(chan, "rambla-queue-2")
+    AMQP.Channel.close(chan)
   end
 
   test "accepts keywords as opts" do
@@ -67,14 +71,16 @@ defmodule RamblaTest do
       exchange: "rambla-exchange-3"
     })
 
-    %Rambla.Connection{conn: %{chan: %AMQP.Channel{} = chan}} =
+    %Rambla.Connection{conn: %{conn: %AMQP.Connection{} = conn}} =
       Rambla.ConnectionPool.conn(Rambla.Amqp)
 
+    {:ok, chan} = AMQP.Channel.open(conn)
     {result, tag} = amqp_wait(chan, "rambla-queue-3", "{\"foo\":42}")
 
     assert result
     assert :ok = AMQP.Basic.ack(chan, tag)
     assert {:empty, _} = AMQP.Basic.get(chan, "rambla-queue-3")
+    AMQP.Channel.close(chan)
   end
 
   test "works with rabbit: bulk update" do
@@ -83,8 +89,10 @@ defmodule RamblaTest do
       exchange: "rambla-exchange-4"
     })
 
-    %Rambla.Connection{conn: %{chan: %AMQP.Channel{} = chan}} =
+    %Rambla.Connection{conn: %{conn: %AMQP.Connection{} = conn}} =
       Rambla.ConnectionPool.conn(Rambla.Amqp)
+
+    {:ok, chan} = AMQP.Channel.open(conn)
 
     [{result1, tag1}, {result2, tag2}] = [
       amqp_wait(chan, "rambla-queue-4", "{\"bar\":42}"),
@@ -94,6 +102,7 @@ defmodule RamblaTest do
     assert result1 and result2
     assert [:ok, :ok] = Enum.map([tag1, tag2], &AMQP.Basic.ack(chan, &1))
     assert {:empty, _} = AMQP.Basic.get(chan, "rambla-queue-4")
+    AMQP.Channel.close(chan)
   end
 
   test "works with redis (hacky low-level)" do

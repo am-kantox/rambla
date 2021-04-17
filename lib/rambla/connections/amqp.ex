@@ -31,11 +31,62 @@ defmodule Rambla.Amqp do
 
   """
 
+  defmodule ChannelPool do
+    @moduledoc false
+    @amqp_pool_size Application.get_env(:rambla, :amqp_pool_size, 32)
+    use Tarearbol.Pool, pool_size: @amqp_pool_size
+
+    @spec publish(%Rambla.Connection.Config{}, binary() | map() | list()) ::
+            {:ok | :replace, Rambla.Connection.Config.t()}
+    defsynch publish(%Rambla.Connection.Config{conn: conn, opts: opts}, message) do
+      message =
+        case message do
+          message when is_binary(message) -> message
+          %{} = message -> Jason.encode!(message)
+          [{_, _} | _] = message -> message |> Map.new() |> Jason.encode!()
+          message -> inspect(message)
+        end
+
+      {_, %{chan: %AMQP.Channel{} = chan}} =
+        reply =
+        case payload!() do
+          %{conn: ^conn, chan: %AMQP.Channel{}} = cfg ->
+            {:ok, cfg}
+
+          %{} = cfg ->
+            if not is_nil(cfg[:chan]), do: AMQP.Channel.close(cfg[:chan])
+            {:replace, %{conn: conn, chan: conn |> AMQP.Channel.open() |> elem(1)}}
+        end
+
+      with %{exchange: exchange} <- opts,
+           declare? <- Map.get(opts, :declare?, true),
+           if(declare?, do: apply(AMQP.Exchange, :declare, [chan, exchange])),
+           :ok <- queue!(chan, opts),
+           do:
+             apply(AMQP.Basic, :publish, [
+               chan,
+               exchange,
+               Map.get(opts, :routing_key, ""),
+               message,
+               Map.get(opts, :options, [])
+             ])
+
+      reply
+    end
+
+    @spec queue!(chan :: AMQP.Channel.t(), map()) :: :ok
+    defp queue!(chan, %{queue: queue, exchange: exchange}) do
+      with {:ok, %{consumer_count: _, message_count: _, queue: ^queue}} <-
+             apply(AMQP.Queue, :declare, [chan, queue]),
+           do: apply(AMQP.Queue, :bind, [chan, queue, exchange])
+    end
+
+    defp queue!(_, %{exchange: _exchange}), do: :ok
+  end
+
   @with_amqp match?({:module, _}, Code.ensure_compiled(AMQP.Channel))
 
   @behaviour Rambla.Connection
-
-  #  rabbit = Keyword.get(state, :conn, Application.get_env(:eventory, :amqp, []))
 
   @impl Rambla.Connection
   def connect(params) when is_list(params) do
@@ -46,72 +97,33 @@ defmodule Rambla.Amqp do
           expected: "🐰 configuration with :host key"
         )
 
+    case ChannelPool.start_link() do
+      {:ok, pool} -> Process.link(pool)
+      {:error, {:already_started, pool}} -> Process.link(pool)
+    end
+
     maybe_amqp(params)
   end
 
   @impl Rambla.Connection
-  def publish(%Rambla.Connection.Config{} = conn, message) when is_binary(message) do
-    case Jason.decode(message) do
-      {:ok, term} -> publish(conn, term)
-      {:error, _} -> do_publish(conn, message)
-    end
-  end
-
-  @impl Rambla.Connection
-  def publish(%Rambla.Connection.Config{} = conn, message) when is_list(message),
-    do: publish(conn, Map.new(message))
-
-  @impl Rambla.Connection
-  def publish(%Rambla.Connection.Config{} = cfg, message)
-      when is_map(message),
-      do: do_publish(cfg, message)
-
-  @spec do_publish(%Rambla.Connection.Config{}, binary() | map()) ::
-          {:ok, map()} | {:error, any()}
-  defp do_publish(%Rambla.Connection.Config{} = cfg, %{} = message),
-    do: do_publish(cfg, Jason.encode!(message))
-
-  defp do_publish(%Rambla.Connection.Config{conn: _conn, chan: chan, opts: opts}, message)
-       when is_binary(message) do
-    with %{exchange: exchange} <- opts,
-         declare? <- Map.get(opts, :declare?, true),
-         if(declare?, do: apply(AMQP.Exchange, :declare, [chan, exchange])),
-         :ok <- queue!(chan, opts),
-         :ok <-
-           apply(AMQP.Basic, :publish, [
-             chan,
-             exchange,
-             Map.get(opts, :routing_key, ""),
-             message,
-             Map.get(opts, :options, [])
-           ]) do
-      {:ok, message}
-    else
-      error -> {:error, error}
-    end
-  end
-
-  @spec queue!(chan :: AMQP.Channel.t(), map()) :: :ok
-  defp queue!(chan, %{queue: queue, exchange: exchange}) do
-    with {:ok, %{consumer_count: _, message_count: _, queue: ^queue}} <-
-           apply(AMQP.Queue, :declare, [chan, queue]),
-         do: apply(AMQP.Queue, :bind, [chan, queue, exchange])
-  end
-
-  defp queue!(_, %{exchange: _exchange}), do: :ok
+  def publish(%Rambla.Connection.Config{} = conn, message)
+      when is_binary(message) or is_list(message) or is_map(message),
+      do: ChannelPool.publish(conn, message)
 
   if @with_amqp do
     defp maybe_amqp(params) do
-      with {:ok, conn} <- AMQP.Connection.open(params),
-           {:ok, chan} <- AMQP.Channel.open(conn) do
-        %Rambla.Connection{
-          conn: %Rambla.Connection.Config{conn: conn, chan: chan},
-          conn_type: __MODULE__,
-          conn_pid: conn.pid,
-          conn_params: params,
-          errors: []
-        }
-      else
+      case AMQP.Connection.open(params) do
+        {:ok, conn} ->
+          Process.link(conn.pid)
+
+          %Rambla.Connection{
+            conn: %Rambla.Connection.Config{conn: conn},
+            conn_type: __MODULE__,
+            conn_pid: conn.pid,
+            conn_params: params,
+            errors: []
+          }
+
         error ->
           %Rambla.Connection{
             conn: %Rambla.Connection.Config{},

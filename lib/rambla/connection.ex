@@ -31,13 +31,12 @@ defmodule Rambla.Connection do
     @type t :: %{
             __struct__: __MODULE__,
             conn: any(),
-            chan: any(),
             opts: map(),
             defaults: map(),
             full_result: boolean()
           }
 
-    defstruct conn: nil, chan: nil, opts: %{}, defaults: %{}, full_result: false
+    defstruct conn: nil, opts: %{}, defaults: %{}, full_result: false
   end
 
   @typedoc "The connection information"
