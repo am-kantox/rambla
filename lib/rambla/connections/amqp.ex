@@ -33,7 +33,8 @@ defmodule Rambla.Amqp do
 
   defmodule ChannelPool do
     @moduledoc false
-    use Tarearbol.Pool, pool_size: 30
+    @amqp_pool_size Application.get_env(:rambla, :amqp_pool_size, 32)
+    use Tarearbol.Pool, pool_size: @amqp_pool_size
 
     @spec publish(%Rambla.Connection.Config{}, binary() | map()) ::
             {:ok, map()} | {:error, any()}
@@ -95,7 +96,11 @@ defmodule Rambla.Amqp do
           expected: "🐰 configuration with :host key"
         )
 
-    with {:ok, pool} <- ChannelPool.start_link(), do: Process.monitor(pool)
+    case ChannelPool.start_link() do
+      {:ok, pool} -> Process.link(pool)
+      {:error, {:already_started, pool}} -> Process.link(pool)
+    end
+
     maybe_amqp(params)
   end
 
@@ -120,6 +125,8 @@ defmodule Rambla.Amqp do
     defp maybe_amqp(params) do
       case AMQP.Connection.open(params) do
         {:ok, conn} ->
+          Process.link(conn.pid)
+
           %Rambla.Connection{
             conn: %Rambla.Connection.Config{conn: conn},
             conn_type: __MODULE__,
