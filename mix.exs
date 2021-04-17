@@ -31,7 +31,7 @@ defmodule Rambla.MixProject do
 
   def application do
     [
-      extra_applications: [:lager, :logger, :inets, :ssl],
+      extra_applications: [:lager, :logger, :poolboy, :inets, :ssl],
       mod: {Rambla.Application, []}
     ]
   end
@@ -67,6 +67,7 @@ defmodule Rambla.MixProject do
       {:jason, "~> 1.0"},
       {:tarearbol, "~> 1.4"},
       {:plug, "~> 1.9"},
+      {:poolboy, "~> 1.5"},
       {:ranch, "~> 1.7 or ~> 2.0"},
 
       # optional backends

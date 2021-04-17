@@ -31,11 +31,51 @@ defmodule Rambla.Amqp do
 
   """
 
+  defmodule ChannelPool do
+    @moduledoc false
+    use Tarearbol.Pool, pool_size: 30
+
+    @spec publish(%Rambla.Connection.Config{}, binary() | map()) ::
+            {:ok, map()} | {:error, any()}
+    def publish(%Rambla.Connection.Config{} = cfg, %{} = message),
+      do: publish(cfg, Jason.encode!(message))
+
+    def publish(%Rambla.Connection.Config{} = cfg, message)
+        when is_binary(message),
+        do: do_publish(cfg, message)
+
+    @spec queue!(chan :: AMQP.Channel.t(), map()) :: :ok
+    defp queue!(chan, %{queue: queue, exchange: exchange}) do
+      with {:ok, %{consumer_count: _, message_count: _, queue: ^queue}} <-
+             apply(AMQP.Queue, :declare, [chan, queue]),
+           do: apply(AMQP.Queue, :bind, [chan, queue, exchange])
+    end
+
+    defp queue!(_, %{exchange: _exchange}), do: :ok
+
+    defsynch do_publish(%Rambla.Connection.Config{chan: chan, opts: opts}, message) do
+      with %{exchange: exchange} <- opts,
+           declare? <- Map.get(opts, :declare?, true),
+           if(declare?, do: apply(AMQP.Exchange, :declare, [chan, exchange])),
+           :ok <- queue!(chan, opts),
+           :ok <-
+             apply(AMQP.Basic, :publish, [
+               chan,
+               exchange,
+               Map.get(opts, :routing_key, ""),
+               message,
+               Map.get(opts, :options, [])
+             ]) do
+        {:ok, message}
+      else
+        error -> {:error, error}
+      end
+    end
+  end
+
   @with_amqp match?({:module, _}, Code.ensure_compiled(AMQP.Channel))
 
   @behaviour Rambla.Connection
-
-  #  rabbit = Keyword.get(state, :conn, Application.get_env(:eventory, :amqp, []))
 
   @impl Rambla.Connection
   def connect(params) when is_list(params) do
@@ -53,7 +93,7 @@ defmodule Rambla.Amqp do
   def publish(%Rambla.Connection.Config{} = conn, message) when is_binary(message) do
     case Jason.decode(message) do
       {:ok, term} -> publish(conn, term)
-      {:error, _} -> do_publish(conn, message)
+      {:error, _} -> ChannelPool.publish(conn, message)
     end
   end
 
@@ -64,46 +104,14 @@ defmodule Rambla.Amqp do
   @impl Rambla.Connection
   def publish(%Rambla.Connection.Config{} = cfg, message)
       when is_map(message),
-      do: do_publish(cfg, message)
-
-  @spec do_publish(%Rambla.Connection.Config{}, binary() | map()) ::
-          {:ok, map()} | {:error, any()}
-  defp do_publish(%Rambla.Connection.Config{} = cfg, %{} = message),
-    do: do_publish(cfg, Jason.encode!(message))
-
-  defp do_publish(%Rambla.Connection.Config{conn: _conn, chan: chan, opts: opts}, message)
-       when is_binary(message) do
-    with %{exchange: exchange} <- opts,
-         declare? <- Map.get(opts, :declare?, true),
-         if(declare?, do: apply(AMQP.Exchange, :declare, [chan, exchange])),
-         :ok <- queue!(chan, opts),
-         :ok <-
-           apply(AMQP.Basic, :publish, [
-             chan,
-             exchange,
-             Map.get(opts, :routing_key, ""),
-             message,
-             Map.get(opts, :options, [])
-           ]) do
-      {:ok, message}
-    else
-      error -> {:error, error}
-    end
-  end
-
-  @spec queue!(chan :: AMQP.Channel.t(), map()) :: :ok
-  defp queue!(chan, %{queue: queue, exchange: exchange}) do
-    with {:ok, %{consumer_count: _, message_count: _, queue: ^queue}} <-
-           apply(AMQP.Queue, :declare, [chan, queue]),
-         do: apply(AMQP.Queue, :bind, [chan, queue, exchange])
-  end
-
-  defp queue!(_, %{exchange: _exchange}), do: :ok
+      do: ChannelPool.publish(cfg, message)
 
   if @with_amqp do
     defp maybe_amqp(params) do
       with {:ok, conn} <- AMQP.Connection.open(params),
-           {:ok, chan} <- AMQP.Channel.open(conn) do
+           {:ok, chan} <- AMQP.Channel.open(conn),
+           {:ok, pool} <- ChannelPool.start_link(),
+           ref when is_reference(ref) <- Process.monitor(pool) do
         %Rambla.Connection{
           conn: %Rambla.Connection.Config{conn: conn, chan: chan},
           conn_type: __MODULE__,
