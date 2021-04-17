@@ -53,23 +53,32 @@ defmodule Rambla.Amqp do
 
     defp queue!(_, %{exchange: _exchange}), do: :ok
 
-    defsynch do_publish(%Rambla.Connection.Config{chan: chan, opts: opts}, message) do
+    defsynch do_publish(%Rambla.Connection.Config{conn: conn, opts: opts}, message) do
+      {_, %{chan: %AMQP.Channel{} = chan}} =
+        reply =
+        case payload!() do
+          %{conn: ^conn, chan: %AMQP.Channel{}} = cfg ->
+            {:ok, cfg}
+
+          %{} = cfg ->
+            if not is_nil(cfg[:chan]), do: AMQP.Channel.close(cfg[:chan])
+            {:replace, %{conn: conn, chan: conn |> AMQP.Channel.open() |> elem(1)}}
+        end
+
       with %{exchange: exchange} <- opts,
            declare? <- Map.get(opts, :declare?, true),
            if(declare?, do: apply(AMQP.Exchange, :declare, [chan, exchange])),
            :ok <- queue!(chan, opts),
-           :ok <-
+           do:
              apply(AMQP.Basic, :publish, [
                chan,
                exchange,
                Map.get(opts, :routing_key, ""),
                message,
                Map.get(opts, :options, [])
-             ]) do
-        {:ok, message}
-      else
-        error -> {:error, error}
-      end
+             ])
+
+      reply
     end
   end
 
@@ -86,6 +95,7 @@ defmodule Rambla.Amqp do
           expected: "🐰 configuration with :host key"
         )
 
+    with {:ok, pool} <- ChannelPool.start_link(), do: Process.monitor(pool)
     maybe_amqp(params)
   end
 
@@ -108,18 +118,16 @@ defmodule Rambla.Amqp do
 
   if @with_amqp do
     defp maybe_amqp(params) do
-      with {:ok, conn} <- AMQP.Connection.open(params),
-           {:ok, chan} <- AMQP.Channel.open(conn),
-           {:ok, pool} <- ChannelPool.start_link(),
-           ref when is_reference(ref) <- Process.monitor(pool) do
-        %Rambla.Connection{
-          conn: %Rambla.Connection.Config{conn: conn, chan: chan},
-          conn_type: __MODULE__,
-          conn_pid: conn.pid,
-          conn_params: params,
-          errors: []
-        }
-      else
+      case AMQP.Connection.open(params) do
+        {:ok, conn} ->
+          %Rambla.Connection{
+            conn: %Rambla.Connection.Config{conn: conn},
+            conn_type: __MODULE__,
+            conn_pid: conn.pid,
+            conn_params: params,
+            errors: []
+          }
+
         error ->
           %Rambla.Connection{
             conn: %Rambla.Connection.Config{},
