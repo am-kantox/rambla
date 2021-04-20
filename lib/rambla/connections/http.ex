@@ -100,7 +100,7 @@ defmodule Rambla.Http do
       |> Enum.reject(&(&1 == ""))
       |> Enum.join("/")
 
-    headers = for {k, v} <- headers, do: {to_charlist(k), to_charlist(v)}
+    headers = for {k, v} <- headers, do: {:erlang.binary_to_list(k), :erlang.binary_to_list(v)}
 
     request(method, url, headers, body, http_options, options)
   end
@@ -158,7 +158,8 @@ defmodule Rambla.Http do
     defp request(unquote(m), url, headers, body, http_options, options, content_type) do
       :httpc.request(
         unquote(m),
-        {to_charlist(url), headers, content_type, body |> Jason.encode!() |> to_charlist()},
+        {:erlang.binary_to_list(url), headers, content_type,
+         body |> Jason.encode!() |> :erlang.binary_to_list()},
         http_options,
         options
       )
@@ -167,6 +168,7 @@ defmodule Rambla.Http do
 
   Enum.each([:get, :head, :options, :delete], fn m ->
     defp request(unquote(m), url, headers, _body, http_options, options, _content_type),
-      do: :httpc.request(unquote(m), {to_charlist(url), headers}, http_options, options)
+      do:
+        :httpc.request(unquote(m), {:erlang.binary_to_list(url), headers}, http_options, options)
   end)
 end
