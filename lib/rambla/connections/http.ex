@@ -78,7 +78,7 @@ defmodule Rambla.Http do
     {port, message} = Map.pop(message, :port, Map.get(defaults, :port))
     {headers, message} = Map.pop(message, :headers, Map.get(defaults, :headers, []))
 
-    {path, message} = Map.pop(message, :path, Map.get(opts, :path, ""))
+    {path, message} = Map.pop(message, :path, Map.get(opts, :path, Map.get(defaults, :path, "")))
     {http_options, message} = Map.pop(message, :http_options, Map.get(opts, :http_options, []))
     {options, message} = Map.pop(message, :options, Map.get(opts, :options, []))
     {%{} = query, message} = Map.pop(message, :query, Map.get(opts, :query, %{}))
@@ -86,7 +86,7 @@ defmodule Rambla.Http do
 
     host_port =
       [host, port]
-      |> Enum.reject(&(&1 == ""))
+      |> Enum.reject(&(to_string(&1) == ""))
       |> Enum.join(":")
 
     path_query =
@@ -99,6 +99,8 @@ defmodule Rambla.Http do
       [host_port, path_query]
       |> Enum.reject(&(&1 == ""))
       |> Enum.join("/")
+
+    headers = for {k, v} <- headers, do: {to_charlist(k), to_charlist(v)}
 
     request(method, url, headers, body, http_options, options)
   end
@@ -153,14 +155,14 @@ defmodule Rambla.Http do
        )
 
   Enum.each([:post, :put], fn m ->
-    defp request(unquote(m), url, headers, body, http_options, options, content_type),
-      do:
-        :httpc.request(
-          unquote(m),
-          {to_charlist(url), headers, :erlang.binary_to_list(Jason.encode!(body)), content_type},
-          http_options,
-          options
-        )
+    defp request(unquote(m), url, headers, body, http_options, options, content_type) do
+      :httpc.request(
+        unquote(m),
+        {to_charlist(url), headers, content_type, body |> Jason.encode!() |> to_charlist()},
+        http_options,
+        options
+      )
+    end
   end)
 
   Enum.each([:get, :head, :options, :delete], fn m ->
