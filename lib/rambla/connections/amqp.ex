@@ -47,15 +47,15 @@ defmodule Rambla.Amqp do
           message -> inspect(message)
         end
 
-      {_, %{chan: %AMQP.Channel{} = chan}} =
+      {_, %{chan: %{__struct__: AMQP.Channel} = chan}} =
         reply =
         case payload!() do
-          %{conn: ^conn, chan: %AMQP.Channel{}} = cfg ->
+          %{conn: ^conn, chan: %{__struct__: AMQP.Channel}} = cfg ->
             {:ok, cfg}
 
           %{} = cfg ->
-            if not is_nil(cfg[:chan]), do: AMQP.Channel.close(cfg[:chan])
-            {:replace, %{conn: conn, chan: conn |> AMQP.Channel.open() |> elem(1)}}
+            if not is_nil(cfg[:chan]), do: apply(AMQP.Channel, :close, [cfg[:chan]])
+            {:replace, %{conn: conn, chan: AMQP.Channel |> apply(:open, [conn]) |> elem(1)}}
         end
 
       with %{exchange: exchange} <- opts,
