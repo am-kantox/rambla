@@ -2,7 +2,7 @@ defmodule Rambla.MixProject do
   use Mix.Project
 
   @app :rambla
-  @version "0.14.1"
+  @version "0.14.2"
 
   def project do
     [
@@ -31,7 +31,7 @@ defmodule Rambla.MixProject do
 
   def application do
     [
-      extra_applications: [:lager, :logger, :poolboy, :inets, :ssl],
+      extra_applications: [:logger, :poolboy, :inets, :ssl],
       mod: {Rambla.Application, []}
     ]
   end
