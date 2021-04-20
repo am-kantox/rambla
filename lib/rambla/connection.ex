@@ -113,7 +113,7 @@ defmodule Rambla.Connection do
       %Rambla.Connection{conn: conn, conn_pid: pid, errors: []} = state when not is_nil(conn) ->
         if is_nil(pid),
           do: Logger.warn("[🖇️] No PID returned from connection. Monitoring is disabled."),
-          else: Process.monitor(pid)
+          else: Process.link(pid)
 
         {:noreply, state}
 
