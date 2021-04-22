@@ -9,7 +9,7 @@ config :rambla,
   ],
   pools: [
     amqp: [
-      pool: [size: 10, max_overflow: 20],
+      options: [size: 2, max_overflow: 1],
       virtual_host: System.get_env("RABBITMQ_VHOST", "/"),
       x_message_ttl: "4000"
     ]

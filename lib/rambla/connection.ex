@@ -3,6 +3,19 @@ defmodule Rambla.Connection do
   The default behaviour for publishers. The common use case would be the module
   implementing this behaviour opens a connection (and keep it opened,) and
   publishes messages as needed.
+
+  ---
+
+  `Rambla.Connection` supports `options:` config that will be passed directly to
+  `:poolboy` as [`Options`](https://github.com/devinus/poolboy#options).
+
+  ## Example
+  
+  ```elixir
+  config :rambla,
+  amqp: […]
+  pools: [amqp: [options: [size: 2, max_overflow: 1], …]]
+  ```
   """
 
   @typedoc """
