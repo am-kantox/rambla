@@ -10,11 +10,11 @@ defmodule Rambla.Connection do
   `:poolboy` as [`Options`](https://github.com/devinus/poolboy#options).
 
   ## Example
-  
+
   ```elixir
   config :rambla,
-  amqp: […]
-  pools: [amqp: [options: [size: 2, max_overflow: 1], …]]
+    amqp: […]
+    pools: [amqp: [options: [size: 2, max_overflow: 1], …]]
   ```
   """
 

@@ -26,7 +26,7 @@ end
 
 ## Changelog
 
-- **`0.14.1`** Accept headers for `:httpc` as map/keyword of binaries
+- **`0.14.4`** Accept headers for `:httpc` as map/keyword of binaries, `:gen_server_timeout` for `publish_synch/3`
 - **`0.14.0`** Use Tarearbol.Pool to manage channels behind AMQP connections
 - **`0.13.0`** Filter out connection params from logs
 - **`0.12.0`** `Rambla.publish_synch/3` to avoid pool while publishing

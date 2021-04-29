@@ -121,13 +121,20 @@ defmodule Rambla.ConnectionPool do
           opts :: map() | keyword()
         ) ::
           Rambla.Connection.outcome() | Rambla.Connection.outcomes()
-  def publish_synch(type, message, opts \\ %{}) do
+  def publish_synch(type, message, opts \\ %{})
+
+  def publish_synch(type, message, opts) when is_list(opts),
+    do: publish_synch(type, message, Map.new(opts))
+
+  def publish_synch(type, message, %{} = opts) do
+    {timeout, opts} = Map.pop(opts, :gen_server_timeout, 5000)
+
     singleton =
       type
       |> fix_type()
       |> Module.concat("Synch")
 
-    GenServer.call(singleton, {:publish, message, opts})
+    GenServer.call(singleton, {:publish, message, opts}, timeout)
   end
 
   @spec conn(type :: atom()) :: Rambla.Connection.Config.t()
@@ -157,9 +164,9 @@ defmodule Rambla.ConnectionPool do
   end
 
   @spec timeout(count :: non_neg_integer()) :: timeout()
-  defp timeout(count) when count < 10_000, do: 5_000
-  defp timeout(count) when count < 20_000, do: 10_000
-  defp timeout(count) when count < 25_000, do: 15_000
-  defp timeout(count) when count < 30_000, do: 20_000
+  defp timeout(count) when count < 10_000, do: 10_000
+  defp timeout(count) when count < 20_000, do: 20_000
+  defp timeout(count) when count < 25_000, do: 25_000
+  defp timeout(count) when count < 30_000, do: 30_000
   defp timeout(_count), do: :infinity
 end
