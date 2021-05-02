@@ -26,6 +26,7 @@ end
 
 ## Changelog
 
+- **`0.15.0`** Hashring for selecting channels in AMQP backend within a single connection
 - **`0.14.4`** Accept headers for `:httpc` as map/keyword of binaries, `:gen_server_timeout` for `publish_synch/3`
 - **`0.14.0`** Use Tarearbol.Pool to manage channels behind AMQP connections
 - **`0.13.0`** Filter out connection params from logs

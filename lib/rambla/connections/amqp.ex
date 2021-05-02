@@ -34,11 +34,20 @@ defmodule Rambla.Amqp do
   defmodule ChannelPool do
     @moduledoc false
     @amqp_pool_size Application.get_env(:rambla, :amqp_pool_size, 32)
-    use Tarearbol.Pool, pool_size: @amqp_pool_size
+    use Tarearbol.Pool, pool_size: @amqp_pool_size, pickup: :hashring
 
     @spec publish(%Rambla.Connection.Config{}, binary() | map() | list()) ::
             {:ok | :replace, Rambla.Connection.Config.t()}
-    defsynch publish(%Rambla.Connection.Config{conn: conn, opts: opts}, message) do
+    def publish(%Rambla.Connection.Config{conn: conn} = cfg, message) do
+      id = Enum.random(1..workers_slice())
+      do_publish({id, conn}, cfg, message)
+    end
+
+    defsynch do_publish(
+               {id, conn},
+               %Rambla.Connection.Config{conn: conn, opts: opts} = cfg,
+               message
+             ) do
       message =
         case message do
           message when is_binary(message) -> message
@@ -82,6 +91,30 @@ defmodule Rambla.Amqp do
     end
 
     defp queue!(_, %{exchange: _exchange}), do: :ok
+
+    @spec workers_slice :: pos_integer()
+    defp workers_slice,
+      do: Application.get_env(:rambla, __MODULE__) || invalidate_workers_slice()
+
+    @spec invalidate_workers_slice :: pos_integer()
+    defp invalidate_workers_slice do
+      poolboy =
+        Rambla.ConnectionPool
+        |> DynamicSupervisor.which_children()
+        |> Enum.reduce_while(nil, fn
+          {_, pid, :worker, [:poolboy]}, nil -> {:halt, pid}
+          _, nil -> {:cont, nil}
+        end)
+
+      with pid when is_pid(pid) <- poolboy,
+           {:ready, num, _, _} when num >= 0 <- :poolboy.status(pid) do
+        num = div(@amqp_pool_size, num + 1)
+        Application.put_env(:rambla, __MODULE__, num)
+        num
+      else
+        _ -> @amqp_pool_size
+      end
+    end
   end
 
   @with_amqp match?({:module, _}, Code.ensure_compiled(AMQP.Channel))
