@@ -47,15 +47,17 @@ defmodule Rambla.ConnectionPool do
           opts when is_list(opts) -> opts
         end
 
-      type = fix_type(type)
+      {type, name} = fix_type(type)
 
       with {options, opts} <- Keyword.pop(opts, :options, []),
            {worker_type, opts} <- Keyword.pop(opts, :type, :local),
            {params, []} <- Keyword.pop(opts, :params, []) do
+        module = type_to_module({type, name})
+
         worker =
           Keyword.merge(
             options,
-            name: {worker_type, type},
+            name: {worker_type, module},
             worker_module: Rambla.Connection
           )
 
@@ -63,7 +65,7 @@ defmodule Rambla.ConnectionPool do
 
         conn_opts =
           params
-          |> Keyword.put(:singleton, Module.concat(type, "Synch"))
+          |> Keyword.put(:singleton, Module.concat(module, "Synch"))
           |> Keyword.put(:conn_type, type)
 
         [
@@ -105,7 +107,7 @@ defmodule Rambla.ConnectionPool do
   @spec do_publish(type :: atom(), messages :: Rambla.Connection.messages(), opts :: map()) ::
           Rambla.Connection.outcome() | Rambla.Connection.outcomes()
   defp do_publish(type, messages, opts) when is_list(messages) do
-    type = fix_type(type)
+    type = type |> fix_type() |> type_to_module()
     timeout = messages |> length() |> timeout()
 
     :poolboy.transaction(
@@ -132,6 +134,7 @@ defmodule Rambla.ConnectionPool do
     singleton =
       type
       |> fix_type()
+      |> type_to_module()
       |> Module.concat("Synch")
 
     GenServer.call(singleton, {:publish, message, opts}, timeout)
@@ -139,12 +142,13 @@ defmodule Rambla.ConnectionPool do
 
   @spec conn(type :: atom()) :: Rambla.Connection.Config.t()
   def conn(type),
-    do: type |> fix_type() |> :poolboy.transaction(&GenServer.call(&1, :conn))
+    do: type |> fix_type() |> type_to_module() |> :poolboy.transaction(&GenServer.call(&1, :conn))
 
   @spec raw(type :: atom(), (pid() -> any())) :: any()
   def raw(type, f) when is_function(f, 1) do
     type
     |> fix_type()
+    |> type_to_module()
     |> :poolboy.transaction(fn pid ->
       case GenServer.call(pid, :conn) do
         %Rambla.Connection{conn_pid: pid} -> {:ok, f.(pid)}
@@ -153,15 +157,30 @@ defmodule Rambla.ConnectionPool do
     end)
   end
 
-  @spec fix_type(k :: binary() | atom()) :: module()
-  defp fix_type(k) when is_binary(k), do: String.to_existing_atom(k)
+  @spec fix_type(atom() | {atom(), atom() | binary()}, boolean()) :: {module(), any()}
+  defp fix_type(name, retry? \\ true)
 
-  defp fix_type(k) when is_atom(k) do
-    case to_string(k) do
-      "Elixir." <> _ -> k
-      short_name -> Module.concat("Rambla", Macro.camelize(short_name))
+  defp fix_type({type, name}, retry?) when is_atom(type) do
+    case {retry?, Code.ensure_loaded?(type)} do
+      {_, true} ->
+        {type, name}
+
+      {true, _} ->
+        fix_type({Module.concat("Rambla", type_to_module({type, name}))}, false)
+
+      _ ->
+        raise Rambla.Exceptions.Unknown,
+          source: __MODULE__,
+          reason: "Unknown type: " <> inspect({type, name})
     end
   end
+
+  defp fix_type(type, retry?) when is_atom(type),
+    do: fix_type({type, :__default__}, retry?)
+
+  @spec type_to_module({atom(), atom() | binary()}) :: module()
+  defp type_to_module({type, name}),
+    do: [type, name] |> Enum.map(&to_string/1) |> Enum.map(&Macro.camelize/1) |> Module.concat()
 
   @spec timeout(count :: non_neg_integer()) :: timeout()
   defp timeout(count) when count < 10_000, do: 10_000
