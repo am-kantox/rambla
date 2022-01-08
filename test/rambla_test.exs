@@ -1,4 +1,4 @@
-defmodule RamblaTest do
+defmodule Test.Rambla do
   use ExUnit.Case, async: true
   doctest Rambla
 
@@ -17,7 +17,9 @@ defmodule RamblaTest do
          params: Application.fetch_env!(:rambla, :amqp)
        ]},
       {Rambla.Redis, params: Application.fetch_env!(:rambla, :pools)[:redis]},
-      {Rambla.Http, params: Application.fetch_env!(:rambla, :pools)[:http]}
+      {Rambla.Http, params: Application.fetch_env!(:rambla, :pools)[:http]},
+      {Rambla.Foo, [options: [], type: :local, params: [bar: :baz]]},
+      {Rambla.Process, params: [callback: self()]}
     ]
 
     Application.ensure_all_started(:amqp)
@@ -28,8 +30,10 @@ defmodule RamblaTest do
       [pool: {:ok, _}, synch: {:ok, _}],
       [pool: {:ok, _}, synch: {:ok, _}],
       [pool: {:ok, _}, synch: {:ok, _}],
+      [pool: {:ok, _}, synch: {:ok, _}],
+      [pool: {:ok, _}, synch: {:ok, _}],
       [pool: {:ok, _}, synch: {:ok, _}]
-    ] = Rambla.ConnectionPool.start_pools(opts)
+    ] = Rambla.ConnectionPool.start_pools(opts, %{Rambla.Foo => Rambla.Process})
 
     Application.ensure_all_started(:telemetria)
 
@@ -162,6 +166,17 @@ defmodule RamblaTest do
       end)
 
     assert raw_response == {:ok, {{:ok, "42"}, {:ok, 1}, {:ok, nil}}}
+  end
+
+  test "works with process" do
+    Rambla.ConnectionPool.publish(Rambla.Process, %{__action__: self(), foo: 42})
+
+    assert_receive %{message: %{foo: 42}, payload: %{}}
+  end
+
+  test "works with mocks" do
+    Rambla.ConnectionPool.publish(Rambla.Foo, %{__action__: self(), foo: 42})
+    assert_receive %{message: %{foo: 42}, payload: %{bar: :baz}}
   end
 
   defp amqp_wait(chan, queue, expected, times \\ 10)
