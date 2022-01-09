@@ -15,7 +15,7 @@ defmodule Rambla.Process do
 
   @impl Rambla.Connection
   def connect(params) when is_list(params) do
-    # TODO shall we monitor the calling process here?
+    # [AM] shall we monitor the calling process here?
 
     {process, params} = Keyword.pop(params, :callback, self())
 
