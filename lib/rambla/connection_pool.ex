@@ -11,6 +11,8 @@ defmodule Rambla.ConnectionPool do
   @impl DynamicSupervisor
   def init(opts), do: DynamicSupervisor.init(Keyword.put_new(opts, :strategy, :one_for_one))
 
+  @mocks Application.compile_env(:rambla, :mocks, %{})
+
   @spec start_pools :: [
           [
             {:pool, DynamicSupervisor.on_start_child()}
@@ -30,7 +32,7 @@ defmodule Rambla.ConnectionPool do
         {k, params: params, options: options}
       end
 
-    start_pools(pools, Application.get_env(:rambla, :mocks, %{}))
+    start_pools(pools)
   end
 
   @spec start_pools(%{required(atom()) => keyword()} | keyword(), %{optional(atom()) => atom()}) ::
@@ -40,7 +42,7 @@ defmodule Rambla.ConnectionPool do
               {:synch, DynamicSupervisor.on_start_child()}
             ]
           ]
-  def start_pools(opts, mocks \\ %{}) do
+  def start_pools(opts, mocks \\ @mocks) do
     Enum.map(opts, fn {type, opts} ->
       opts =
         case opts do
