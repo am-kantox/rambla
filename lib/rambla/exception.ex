@@ -44,8 +44,7 @@ defmodule Rambla.Exception do
   def reduce(exs) do
     exs
     |> Enum.reverse()
-    |> Enum.map(& &1.message)
-    |> Enum.join("\n")
+    |> Enum.map_join("\n", & &1.message)
   end
 end
 

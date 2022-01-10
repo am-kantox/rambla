@@ -1,6 +1,6 @@
 import Config
 
-config :telemetria, applications: [rambla: true]
+config :telemetria, enabled: false
 
 config :rambla,
   amqp: [

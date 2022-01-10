@@ -36,7 +36,7 @@ defmodule Rambla.Amqp do
     @amqp_pool_size Application.get_env(:rambla, :amqp_pool_size, 32)
     use Tarearbol.Pool, pool_size: @amqp_pool_size, pickup: :hashring
 
-    @spec publish(%Rambla.Connection.Config{}, binary() | map() | list()) ::
+    @spec publish(Rambla.Connection.Config.t(), binary() | map() | list()) ::
             {:ok | :replace, Rambla.Connection.Config.t()}
     def publish(%Rambla.Connection.Config{conn: conn} = cfg, message) do
       id = Enum.random(1..workers_slice())

@@ -1,17 +1,25 @@
-defmodule RamblaTest do
+defmodule Test.Rambla do
   use ExUnit.Case, async: true
   doctest Rambla
 
   setup_all do
     opts = [
-      {Rambla.Amqp,
+      {{Rambla.Amqp, :default},
        [
          options: [size: 5, max_overflow: 300],
          type: :local,
          params: Application.fetch_env!(:rambla, :amqp)
        ]},
+      {{Rambla.Amqp, :other},
+       [
+         options: [size: 5, max_overflow: 100],
+         type: :local,
+         params: Application.fetch_env!(:rambla, :amqp)
+       ]},
       {Rambla.Redis, params: Application.fetch_env!(:rambla, :pools)[:redis]},
-      {Rambla.Http, params: Application.fetch_env!(:rambla, :pools)[:http]}
+      {Rambla.Http, params: Application.fetch_env!(:rambla, :pools)[:http]},
+      {Rambla.Foo, [options: [], type: :local, params: [bar: :baz]]},
+      {Rambla.Process, params: [callback: self()]}
     ]
 
     Application.ensure_all_started(:amqp)
@@ -21,8 +29,11 @@ defmodule RamblaTest do
     [
       [pool: {:ok, _}, synch: {:ok, _}],
       [pool: {:ok, _}, synch: {:ok, _}],
+      [pool: {:ok, _}, synch: {:ok, _}],
+      [pool: {:ok, _}, synch: {:ok, _}],
+      [pool: {:ok, _}, synch: {:ok, _}],
       [pool: {:ok, _}, synch: {:ok, _}]
-    ] = Rambla.ConnectionPool.start_pools(opts)
+    ] = Rambla.ConnectionPool.start_pools(opts, %{Rambla.Foo => Rambla.Process})
 
     Application.ensure_all_started(:telemetria)
 
@@ -105,6 +116,33 @@ defmodule RamblaTest do
     AMQP.Channel.close(chan)
   end
 
+  test "works with different rabbits" do
+    Rambla.ConnectionPool.publish(Rambla.Amqp, [%{bar: 42}, %{baz: 42}], %{
+      queue: "rambla-queue-5",
+      exchange: "rambla-exchange-5"
+    })
+
+    Rambla.ConnectionPool.publish({Rambla.Amqp, :other}, %{baqq: 42}, %{
+      exchange: "rambla-exchange-5"
+    })
+
+    %Rambla.Connection{conn: %{conn: %AMQP.Connection{} = conn}} =
+      Rambla.ConnectionPool.conn(Rambla.Amqp)
+
+    {:ok, chan} = AMQP.Channel.open(conn)
+
+    [{result1, tag1}, {result2, tag2}, {result3, tag3}] = [
+      amqp_wait(chan, "rambla-queue-5", "{\"bar\":42}"),
+      amqp_wait(chan, "rambla-queue-5", "{\"baz\":42}"),
+      amqp_wait(chan, "rambla-queue-5", "{\"baqq\":42}")
+    ]
+
+    assert result1 and result2 and result3
+    assert [:ok, :ok, :ok] = Enum.map([tag1, tag2, tag3], &AMQP.Basic.ack(chan, &1))
+    assert {:empty, _} = AMQP.Basic.get(chan, "rambla-queue-5")
+    AMQP.Channel.close(chan)
+  end
+
   test "works with redis (hacky low-level)" do
     Rambla.ConnectionPool.publish(Rambla.Redis, %{foo: 42})
 
@@ -128,6 +166,17 @@ defmodule RamblaTest do
       end)
 
     assert raw_response == {:ok, {{:ok, "42"}, {:ok, 1}, {:ok, nil}}}
+  end
+
+  test "works with process" do
+    Rambla.ConnectionPool.publish(Rambla.Process, %{__action__: self(), foo: 42})
+
+    assert_receive %{message: %{foo: 42}, payload: %{}}
+  end
+
+  test "works with mocks" do
+    Rambla.ConnectionPool.publish(Rambla.Foo, %{__action__: self(), foo: 42})
+    assert_receive %{message: %{foo: 42}, payload: %{bar: :baz}}
   end
 
   defp amqp_wait(chan, queue, expected, times \\ 10)

@@ -65,8 +65,7 @@ defmodule Rambla.Smtp do
     smtp_message =
       ["Subject: ", "From: ", "To: ", "\r\n"]
       |> Enum.zip([subject, hd(from_with_name), to, body])
-      |> Enum.map(&(&1 |> Tuple.to_list() |> Enum.join()))
-      |> Enum.join("\r\n")
+      |> Enum.map_join("\r\n", &(&1 |> Tuple.to_list() |> Enum.join()))
 
     apply(:gen_smtp_client, :send, [
       {to, Map.values(from), smtp_message},
