@@ -169,7 +169,7 @@ defmodule Rambla.ConnectionPool do
           {type, name}
 
         {true, _} ->
-          fix_type({Module.concat("Rambla", type_to_module({type, name}))}, false, false)
+          fix_type(type_to_module({"Rambla", type}), false, false)
 
         _ ->
           raise Rambla.Exceptions.Unknown,
@@ -186,9 +186,13 @@ defmodule Rambla.ConnectionPool do
   defp fix_type(type, retry?, module?) when is_atom(type),
     do: fix_type({type, :default}, retry?, module?)
 
-  @spec type_to_module({atom(), atom() | binary()}) :: module()
-  defp type_to_module({type, name}),
-    do: [type, name] |> Enum.map(&to_string/1) |> Enum.map(&Macro.camelize/1) |> Module.concat()
+  @spec type_to_module({atom(), atom() | binary()} | atom() | binary()) :: module()
+  defp type_to_module(type) when is_atom(type) or is_binary(type),
+    do: Module.concat([type |> to_string() |> Macro.camelize()])
+
+  defp type_to_module({type, name})
+       when (is_binary(type) or is_atom(type)) and (is_binary(name) or is_atom(name)),
+       do: [type, name] |> Enum.map(&type_to_module/1) |> Module.concat()
 
   @spec timeout(count :: non_neg_integer()) :: timeout()
   defp timeout(count) when count < 10_000, do: 10_000

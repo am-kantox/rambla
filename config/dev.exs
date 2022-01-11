@@ -11,6 +11,6 @@ config :rambla,
     amqp: [
       options: [size: 5, max_overflow: 0],
       virtual_host: System.get_env("RABBITMQ_VHOST", "/"),
-      x_message_ttl: "4000"
+      params: [x_message_ttl: "4000"]
     ]
   ]

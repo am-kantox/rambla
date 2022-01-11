@@ -24,6 +24,8 @@ defmodule Rambla do
   defdelegate start_pools(), to: Rambla.ConnectionPool
   @doc "Starts the pools as specified by options (`map()` or `keyword()`)"
   defdelegate start_pools(opts), to: Rambla.ConnectionPool
+  @doc "Returns the currently active pools"
+  defdelegate pools(), to: Rambla.ConnectionPool
 
   @doc """
   Publishes the message to the target pool. The message structure depends on

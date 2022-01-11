@@ -4,7 +4,7 @@ defmodule Test.Rambla do
 
   setup_all do
     opts = [
-      {{Rambla.Amqp, :default},
+      {:amqp,
        [
          options: [size: 5, max_overflow: 300],
          type: :local,
@@ -26,18 +26,24 @@ defmodule Test.Rambla do
     Application.ensure_all_started(:phoenix_pubsub)
     Application.ensure_all_started(:envio)
 
-    [
-      [pool: {:ok, _}, synch: {:ok, _}],
-      [pool: {:ok, _}, synch: {:ok, _}],
-      [pool: {:ok, _}, synch: {:ok, _}],
-      [pool: {:ok, _}, synch: {:ok, _}],
-      [pool: {:ok, _}, synch: {:ok, _}],
-      [pool: {:ok, _}, synch: {:ok, _}]
-    ] = Rambla.ConnectionPool.start_pools(opts, %{Rambla.Foo => Rambla.Process})
+    pools =
+      [
+        [pool: {:ok, _}, synch: {:ok, _}],
+        [pool: {:ok, _}, synch: {:ok, _}],
+        [pool: {:ok, _}, synch: {:ok, _}],
+        [pool: {:ok, _}, synch: {:ok, _}],
+        [pool: {:ok, _}, synch: {:ok, _}],
+        [pool: {:ok, _}, synch: {:ok, _}]
+      ] = Rambla.ConnectionPool.start_pools(opts, %{Rambla.Foo => Rambla.Process})
 
     Application.ensure_all_started(:telemetria)
 
-    :ok
+    %{pools: pools}
+  end
+
+  test "pools are ok", %{pools: pools} do
+    assert Enum.flat_map(pools, fn p -> p |> Keyword.values() |> Enum.map(&elem(&1, 1)) end) ==
+             Enum.map(Rambla.pools(), &elem(&1, 1))
   end
 
   test "works with rabbit" do
