@@ -29,7 +29,7 @@ defmodule Rambla.ConnectionPool do
           |> Keyword.merge(v)
           |> Keyword.pop(:options, [])
 
-        {k, params: params, options: options}
+        {k, [params: params, options: options]}
       end
 
     start_pools(pools)
@@ -179,6 +179,9 @@ defmodule Rambla.ConnectionPool do
 
     if module?, do: type_to_module(type), else: type
   end
+
+  defp fix_type({type}, retry?, module?) when is_atom(type),
+    do: fix_type(type, retry?, module?)
 
   defp fix_type(type, retry?, module?) when is_atom(type),
     do: fix_type({type, :default}, retry?, module?)
