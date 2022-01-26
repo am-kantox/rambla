@@ -15,7 +15,9 @@ defmodule Rambla.Redis do
         raise(Rambla.Exceptions.Connection,
           source: __MODULE__,
           info: params,
-          reason: "🔴 Redix included and configured with :host key"
+          source: __MODULE__,
+          reason: "inconsistent params",
+          expected: "🔴 Redix configuration with :host key"
         )
 
     maybe_redis(params)

@@ -19,11 +19,11 @@ defmodule Rambla.Exception do
   defmacro __using__(_opts \\ []) do
     quote location: :keep do
       @moduledoc false
-      defexception [:reason, :source, :info]
+      defexception [:reason, :source, :info, :expected]
 
       @impl true
-      def message(%__MODULE__{reason: reason, source: source}),
-        do: "✗ " <> inspect(source) <> ": " <> reason
+      def message(%__MODULE__{reason: reason, source: source, expected: expected}),
+        do: "✗ " <> inspect(source) <> ": " <> reason <> " (expected: #{expected})"
 
       @impl true
       def exception(opts) do

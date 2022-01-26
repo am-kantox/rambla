@@ -26,6 +26,7 @@ end
 
 ## Changelog
 
+- **`0.16.3`** Better error reporting, logging of insuccessfuly HTTP requests
 - **`0.16.0`** Several instances of service + Mocks
 - **`0.15.0`** Hashring for selecting channels in AMQP backend within a single connection
 - **`0.14.4`** Accept headers for `:httpc` as map/keyword of binaries, `:gen_server_timeout` for `publish_synch/3`

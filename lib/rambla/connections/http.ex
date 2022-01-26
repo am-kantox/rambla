@@ -23,6 +23,9 @@ defmodule Rambla.Http do
   List of all possible options might be found in
   [`:httpc.request/4`](http://erlang.org/doc/man/httpc.html#request-4), names are preserved.
   """
+
+  require Logger
+
   @behaviour Rambla.Connection
 
   @conn_params ~w|host port|a
@@ -33,6 +36,8 @@ defmodule Rambla.Http do
       do:
         raise(Rambla.Exceptions.Connection,
           value: params,
+          source: __MODULE__,
+          reason: "inconsistent params",
           expected: "🕸️ configuration with :host key"
         )
 
@@ -50,16 +55,6 @@ defmodule Rambla.Http do
       errors: []
     }
   end
-
-  @impl Rambla.Connection
-  def publish(%Rambla.Connection.Config{} = conn, message) when is_binary(message),
-    do:
-      publish(conn, %{
-        method: :get,
-        host: "",
-        port: "",
-        path: message
-      })
 
   @impl Rambla.Connection
   def publish(%Rambla.Connection.Config{} = conn, message) when is_binary(message),
@@ -156,19 +151,37 @@ defmodule Rambla.Http do
 
   Enum.each([:post, :put], fn m ->
     defp request(unquote(m), url, headers, body, http_options, options, content_type) do
-      :httpc.request(
-        unquote(m),
+      unquote(m)
+      |> :httpc.request(
         {:erlang.binary_to_list(url), headers, content_type,
          body |> Jason.encode!() |> :erlang.binary_to_list()},
         http_options,
         options
       )
+      |> tap_log()
     end
   end)
 
   Enum.each([:get, :head, :options, :delete], fn m ->
-    defp request(unquote(m), url, headers, _body, http_options, options, _content_type),
-      do:
-        :httpc.request(unquote(m), {:erlang.binary_to_list(url), headers}, http_options, options)
+    defp request(unquote(m), url, headers, _body, http_options, options, _content_type) do
+      unquote(m)
+      |> :httpc.request({:erlang.binary_to_list(url), headers}, http_options, options)
+      |> tap_log()
+    end
   end)
+
+  defp tap_log({:ok, {{_, ok, _}, _, response}}) when ok in 200..299 do
+    Logger.debug("[🕸️] Response: " <> inspect(response))
+    {:ok, response}
+  end
+
+  defp tap_log({:ok, {{_, ko, _}, _, response}}) do
+    Logger.warn("[🕸️] Response: " <> inspect({ko, response}))
+    {:error, {ko, response}}
+  end
+
+  defp tap_log(ko) do
+    Logger.error("[🕸️] Error: " <> inspect(ko))
+    ko
+  end
 end

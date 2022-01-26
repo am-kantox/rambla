@@ -127,6 +127,8 @@ defmodule Rambla.Amqp do
       do:
         raise(Rambla.Exceptions.Connection,
           value: params,
+          source: __MODULE__,
+          reason: "inconsistent params",
           expected: "🐰 configuration with :host key"
         )
 
