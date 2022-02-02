@@ -130,8 +130,11 @@ defmodule Rambla.ConnectionPool do
   def publish_synch(type, message, opts) when is_list(opts),
     do: publish_synch(type, message, Map.new(opts))
 
+  def publish_synch(type, message, %{} = opts),
+    do: do_publish_synch(type, message, opts)
+
   @telemetria level: :info, if: Rambla.Telemetria.use?()
-  def publish_synch(type, message, %{} = opts) do
+  def do_publish_synch(type, message, %{} = opts) do
     {timeout, opts} = Map.pop(opts, :gen_server_timeout, 5000)
 
     singleton =
