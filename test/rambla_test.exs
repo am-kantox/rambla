@@ -65,16 +65,22 @@ defmodule Test.Rambla do
   end
 
   test "works with rabbit (synch)" do
-    Rambla.ConnectionPool.publish_synch(Rambla.Amqp, %{synch: 94}, %{
-      queue: "rambla-queue-2",
-      exchange: "rambla-exchange-2"
-    })
-
     %Rambla.Connection{conn: %{conn: %AMQP.Connection{} = conn}} =
       Rambla.ConnectionPool.conn(Rambla.Amqp)
 
+    92..110
+    |> Enum.map(fn i ->
+      Task.async(fn ->
+        Rambla.publish_synch(:amqp, %{synch: i}, %{
+          queue: "rambla-queue-2",
+          exchange: "rambla-exchange-2"
+        })
+      end)
+    end)
+    |> Task.await_many()
+
     {:ok, chan} = AMQP.Channel.open(conn)
-    {result, tag} = amqp_wait(chan, "rambla-queue-2", "{\"synch\":94}")
+    {result, tag} = amqp_wait(chan, "rambla-queue-2", "{\"synch\":110}")
 
     assert result
     assert :ok = AMQP.Basic.ack(chan, tag)
@@ -191,6 +197,7 @@ defmodule Test.Rambla do
   defp amqp_wait(chan, queue, expected, times) do
     case AMQP.Basic.get(chan, queue) do
       {:ok, ^expected, %{delivery_tag: tag}} -> {true, tag}
+      {:ok, _not_expected, %{delivery_tag: _tag}} -> amqp_wait(chan, queue, expected, times)
       {:empty, _} -> amqp_wait(chan, queue, expected, times - 1)
       other -> {false, other}
     end

@@ -4,7 +4,7 @@ defmodule Rambla.Telemetria do
   @default_options [use: [], apply: [level: :info]]
 
   @all_options :telemetria
-               |> Application.get_env(:applications, [])
+               |> Application.compile_env(:applications, [])
                |> Keyword.get(:rambla, [])
   @options if @all_options == true,
              do: @default_options,

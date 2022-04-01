@@ -33,7 +33,7 @@ defmodule Rambla.Amqp do
 
   defmodule ChannelPool do
     @moduledoc false
-    @amqp_pool_size Application.get_env(:rambla, :amqp_pool_size, 32)
+    @amqp_pool_size Application.compile_env(:rambla, :amqp_pool_size, 32)
     use Tarearbol.Pool, pool_size: @amqp_pool_size, pickup: :hashring
 
     @spec publish(Rambla.Connection.Config.t(), binary() | map() | list()) ::
