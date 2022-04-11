@@ -106,7 +106,8 @@ defmodule Rambla.ConnectionPool do
   def publish(type, messages, opts) when is_list(messages),
     do: do_publish(type, messages, opts)
 
-  @telemetria level: :info, if: Rambla.Telemetria.use?()
+  if Rambla.Telemetria.use?(), do: @telemetria(Rambla.Telemetria.apply_options())
+
   @spec do_publish(type :: atom(), messages :: Rambla.Connection.messages(), opts :: map()) ::
           Rambla.Connection.outcome() | Rambla.Connection.outcomes()
   defp do_publish(type, messages, opts) when is_list(messages) do
@@ -133,7 +134,8 @@ defmodule Rambla.ConnectionPool do
   def publish_synch(type, message, %{} = opts),
     do: do_publish_synch(type, message, opts)
 
-  @telemetria level: :info, if: Rambla.Telemetria.use?()
+  if Rambla.Telemetria.use?(), do: @telemetria(Rambla.Telemetria.apply_options())
+
   def do_publish_synch(type, message, %{} = opts) do
     {timeout, opts} = Map.pop(opts, :gen_server_timeout, 5000)
 

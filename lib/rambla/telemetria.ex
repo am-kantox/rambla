@@ -1,14 +1,18 @@
 defmodule Rambla.Telemetria do
   @moduledoc false
 
-  @default_options [use: [], apply: [level: :info]]
+  default_options = [use: [], apply: [level: :info]]
 
-  @all_options :telemetria
-               |> Application.compile_env(:applications, [])
-               |> Keyword.get(:rambla, [])
-  @options if @all_options == true,
-             do: @default_options,
-             else: Keyword.merge(@default_options, @all_options)
+  all_options =
+    :telemetria
+    |> Application.compile_env(:applications, [])
+    |> Keyword.get(:rambla, [])
+
+  @options (case all_options do
+              true -> default_options
+              [_ | _] -> Keyword.merge(default_options, all_options)
+              _ -> []
+            end)
 
   @use @options != [] and match?({:module, Telemetria}, Code.ensure_compiled(Telemetria))
 
