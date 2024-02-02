@@ -29,3 +29,5 @@ rambla-*.tar
 
 # Telemetria events
 config/.telemetria.config.json
+
+/.elixir-tools/

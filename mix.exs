@@ -2,13 +2,13 @@ defmodule Rambla.MixProject do
   use Mix.Project
 
   @app :rambla
-  @version "0.16.6"
+  @version "1.0.0"
 
   def project do
     [
       app: @app,
       version: @version,
-      elixir: "~> 1.10",
+      elixir: "~> 1.14",
       elixirc_paths: elixirc_paths(Mix.env()),
       compilers: compilers(Mix.env()),
       start_permanent: Mix.env() == :prod,
@@ -21,7 +21,7 @@ defmodule Rambla.MixProject do
       docs: docs(),
       dialyzer: [
         plt_file: {:no_warn, ".dialyzer/plts/dialyzer.plt"},
-        plt_add_deps: :transitive,
+        plt_add_deps: :app_tree,
         plt_add_apps: [:amqp, :redix, :inets, :ssl, :mix],
         list_unused_filters: true,
         ignore_warnings: ".dialyzer/ignore.exs"
@@ -74,7 +74,7 @@ defmodule Rambla.MixProject do
       {:amqp, "~> 1.2 or ~> 2.0 or ~> 3.0", optional: true},
       {:redix, "~> 1.0", optional: true},
       {:gen_smtp, "~> 0.4 or ~> 1.0", optional: true},
-      {:telemetria, "~> 0.4", optional: true},
+      {:telemetria, "~> 0.4 or ~> 1.0", optional: true},
 
       # dev, test
       {:credo, "~> 1.0", only: [:dev, :ci], runtime: false},

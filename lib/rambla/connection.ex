@@ -125,7 +125,7 @@ defmodule Rambla.Connection do
     case conn_type.connect(conn_params) do
       %Rambla.Connection{conn: conn, conn_pid: pid, errors: []} = state when not is_nil(conn) ->
         if is_nil(pid),
-          do: Logger.warn("[🖇️] No PID returned from connection. Monitoring is disabled."),
+          do: Logger.warning("[🖇️] No PID returned from connection. Monitoring is disabled."),
           else: Process.link(pid)
 
         {:noreply, state}
@@ -166,6 +166,7 @@ defmodule Rambla.Connection do
       if conn.full_result do
         %{oks: oks, errors: errors} =
           Enum.reduce(messages, %{oks: [], errors: []}, fn message, acc ->
+            # credo:disable-for-lines:4 
             case conn_type.publish(conn, message) do
               {:ok, result} -> %{acc | oks: [result | acc.oks]}
               {:error, reason} -> %{acc | errors: [reason | acc.errors]}

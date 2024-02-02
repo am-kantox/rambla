@@ -73,6 +73,9 @@ defmodule Rambla.Http do
     {port, message} = Map.pop(message, :port, Map.get(defaults, :port))
     {headers, message} = Map.pop(message, :headers, Map.get(defaults, :headers, []))
 
+    {content_type, message} =
+      Map.pop(message, :content_type, Map.get(defaults, :content_type, ~c"application/json"))
+
     {path, message} = Map.pop(message, :path, Map.get(opts, :path, Map.get(defaults, :path, "")))
     {http_options, message} = Map.pop(message, :http_options, Map.get(opts, :http_options, []))
     {options, message} = Map.pop(message, :options, Map.get(opts, :options, []))
@@ -97,7 +100,7 @@ defmodule Rambla.Http do
 
     headers = for {k, v} <- headers, do: {:erlang.binary_to_list(k), :erlang.binary_to_list(v)}
 
-    request(method, url, headers, body, http_options, options)
+    request(method, url, headers, body, http_options, options, content_type)
   end
 
   @typep method :: :head | :get | :put | :post | :trace | :options | :delete | :patch
@@ -143,10 +146,10 @@ defmodule Rambla.Http do
          method,
          url,
          headers,
-         body \\ "",
-         http_options \\ [],
-         options \\ [],
-         content_type \\ 'application/json'
+         body,
+         http_options,
+         options,
+         content_type
        )
 
   Enum.each([:post, :put], fn m ->
@@ -176,7 +179,7 @@ defmodule Rambla.Http do
   end
 
   defp tap_log({:ok, {{_, ko, _}, _, response}}) do
-    Logger.warn("[🕸️] Response: " <> inspect({ko, response}))
+    Logger.warning("[🕸️] Response: " <> inspect({ko, response}))
     {:error, {ko, response}}
   end
 
