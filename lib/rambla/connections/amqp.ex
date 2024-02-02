@@ -33,21 +33,17 @@ defmodule Rambla.Amqp do
 
   defmodule ChannelPool do
     @moduledoc false
-    @amqp_pool_size Application.compile_env(:rambla, :amqp_pool_size, 32)
-    use Tarearbol.Pool, pool_size: @amqp_pool_size, pickup: :hashring
 
-    @spec publish(Rambla.Connection.Config.t(), binary() | map() | list()) ::
-            {:ok | :replace, Rambla.Connection.Config.t()}
+    @spec publish(Rambla.Connection.Config.t(), binary() | map() | list()) :: {:ok, any()}
     def publish(%Rambla.Connection.Config{conn: conn} = cfg, message) do
-      id = Enum.random(1..workers_slice())
-      do_publish({id, conn}, cfg, message)
+      do_publish(conn, cfg, message)
     end
 
-    defsynch do_publish(
-               {id, conn},
-               %Rambla.Connection.Config{conn: conn, opts: opts} = cfg,
-               message
-             ) do
+    defp do_publish(
+           conn,
+           %Rambla.Connection.Config{conn: conn, chan: chan, opts: opts},
+           message
+         ) do
       message =
         case message do
           message when is_binary(message) -> message
@@ -56,31 +52,22 @@ defmodule Rambla.Amqp do
           message -> inspect(message)
         end
 
-      {_, %{chan: %{__struct__: AMQP.Channel} = chan}} =
-        reply =
-        case payload!() do
-          %{conn: ^conn, chan: %{__struct__: AMQP.Channel}} = cfg ->
-            {:ok, cfg}
-
-          %{} = cfg ->
-            if not is_nil(cfg[:chan]), do: apply(AMQP.Channel, :close, [cfg[:chan]])
-            {:replace, %{conn: conn, chan: AMQP.Channel |> apply(:open, [conn]) |> elem(1)}}
-        end
-
       with %{exchange: exchange} <- opts,
            declare? <- Map.get(opts, :declare?, true),
            if(declare?, do: apply(AMQP.Exchange, :declare, [chan, exchange])),
-           :ok <- queue!(chan, opts),
-           do:
-             apply(AMQP.Basic, :publish, [
-               chan,
-               exchange,
-               Map.get(opts, :routing_key, ""),
-               message,
-               Map.get(opts, :options, [])
-             ])
+           :ok <- queue!(chan, opts) do
+        apply(AMQP.Basic, :publish, [
+          chan,
+          exchange,
+          Map.get(opts, :routing_key, ""),
+          message,
+          Map.get(opts, :options, [])
+        ])
 
-      reply
+        {:ok, message}
+      else
+        error -> {:error, error}
+      end
     end
 
     @spec queue!(chan :: AMQP.Channel.t(), map()) :: :ok
@@ -91,30 +78,6 @@ defmodule Rambla.Amqp do
     end
 
     defp queue!(_, %{exchange: _exchange}), do: :ok
-
-    @spec workers_slice :: pos_integer()
-    defp workers_slice,
-      do: Application.get_env(:rambla, __MODULE__) || invalidate_workers_slice()
-
-    @spec invalidate_workers_slice :: pos_integer()
-    defp invalidate_workers_slice do
-      poolboy =
-        Rambla.ConnectionPool
-        |> DynamicSupervisor.which_children()
-        |> Enum.reduce_while(nil, fn
-          {_, pid, :worker, [:poolboy]}, nil -> {:halt, pid}
-          _, nil -> {:cont, nil}
-        end)
-
-      with pid when is_pid(pid) <- poolboy,
-           {:ready, num, _, _} when num >= 0 <- :poolboy.status(pid) do
-        num = div(@amqp_pool_size, num + 1)
-        Application.put_env(:rambla, __MODULE__, num)
-        num
-      else
-        _ -> @amqp_pool_size
-      end
-    end
   end
 
   @with_amqp match?({:module, _}, Code.ensure_compiled(AMQP.Channel))
@@ -132,11 +95,6 @@ defmodule Rambla.Amqp do
           expected: "🐰 configuration with :host key"
         )
 
-    case ChannelPool.start_link() do
-      {:ok, pool} -> Process.link(pool)
-      {:error, {:already_started, pool}} -> Process.link(pool)
-    end
-
     maybe_amqp(params)
   end
 
@@ -147,18 +105,18 @@ defmodule Rambla.Amqp do
 
   if @with_amqp do
     defp maybe_amqp(params) do
-      case AMQP.Connection.open(params) do
-        {:ok, conn} ->
-          Process.link(conn.pid)
+      with {:ok, conn} <- AMQP.Connection.open(params),
+           {:ok, chan} <- AMQP.Channel.open(conn) do
+        Process.link(conn.pid)
 
-          %Rambla.Connection{
-            conn: %Rambla.Connection.Config{conn: conn},
-            conn_type: __MODULE__,
-            conn_pid: conn.pid,
-            conn_params: params,
-            errors: []
-          }
-
+        %Rambla.Connection{
+          conn: %Rambla.Connection.Config{conn: conn, chan: chan},
+          conn_type: __MODULE__,
+          conn_pid: conn.pid,
+          conn_params: params,
+          errors: []
+        }
+      else
         error ->
           %Rambla.Connection{
             conn: %Rambla.Connection.Config{},

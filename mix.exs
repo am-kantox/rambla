@@ -2,7 +2,7 @@ defmodule Rambla.MixProject do
   use Mix.Project
 
   @app :rambla
-  @version "1.0.0"
+  @version "1.0.1"
 
   def project do
     [
@@ -63,9 +63,7 @@ defmodule Rambla.MixProject do
 
   defp deps do
     [
-      {:boundary, "~> 0.6"},
       {:jason, "~> 1.0"},
-      {:tarearbol, "~> 1.6"},
       {:plug, "~> 1.9"},
       {:poolboy, "~> 1.5"},
       {:ranch, "~> 1.7 or ~> 2.0"},
