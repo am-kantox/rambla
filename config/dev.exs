@@ -1,5 +1,13 @@
 import Config
 
+config :amqp,
+  connections: [
+    local_conn: [url: "amqp://guest:guest@localhost:5672"]
+  ],
+  channels: [
+    chan_1: [connection: :local_conn]
+  ]
+
 config :rambla,
   amqp: [
     host: System.get_env("RABBITMQ_HOST", "127.0.0.1"),

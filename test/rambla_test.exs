@@ -3,6 +3,14 @@ defmodule Test.Rambla do
   doctest Rambla
 
   setup_all do
+    # v1.0
+    modern_amqp =
+      [connection_options: [exchange: "amq.direct"], count: 3]
+      |> Rambla.Handlers.Amqp.children_specs()
+      |> Enum.map(&start_supervised!/1)
+
+    # v0.0
+
     opts = [
       {:amqp,
        [
@@ -38,12 +46,25 @@ defmodule Test.Rambla do
 
     Application.ensure_all_started(:telemetria)
 
-    %{pools: pools}
+    %{pools: pools, modern_amqp: modern_amqp}
   end
 
   test "pools are ok", %{pools: pools} do
     assert Enum.flat_map(pools, fn p -> p |> Keyword.values() |> Enum.map(&elem(&1, 1)) end) ==
              Enum.map(Rambla.pools(), &elem(&1, 1))
+  end
+
+  test "modern works with rabbit" do
+    Rambla.Handlers.Amqp.publish(:chan_1, %{message: %{foo: 42}, exchange: "rambla-exchange-1"})
+
+    {:ok, conn} = AMQP.Application.get_connection(:local_conn)
+    {:ok, chan} = AMQP.Channel.open(conn)
+    {result, tag} = amqp_wait(chan, "rambla-queue-1", "{\"foo\":42}")
+
+    assert result
+    assert :ok = AMQP.Basic.ack(chan, tag)
+    assert {:empty, _} = AMQP.Basic.get(chan, "rambla-queue-1")
+    AMQP.Channel.close(chan)
   end
 
   test "works with rabbit" do
@@ -198,7 +219,7 @@ defmodule Test.Rambla do
     case AMQP.Basic.get(chan, queue) do
       {:ok, ^expected, %{delivery_tag: tag}} -> {true, tag}
       {:ok, _not_expected, %{delivery_tag: _tag}} -> amqp_wait(chan, queue, expected, times)
-      {:empty, _} -> amqp_wait(chan, queue, expected, times - 1)
+      {:empty, _} -> Process.sleep(100) && amqp_wait(chan, queue, expected, times - 1)
       other -> {false, other}
     end
   end
