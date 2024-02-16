@@ -8,7 +8,7 @@ defmodule Rambla.MixProject do
     [
       app: @app,
       version: @version,
-      elixir: "~> 1.14",
+      elixir: "~> 1.15",
       elixirc_paths: elixirc_paths(Mix.env()),
       compilers: compilers(Mix.env()),
       start_permanent: Mix.env() == :prod,
