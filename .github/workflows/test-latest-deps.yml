@@ -10,7 +10,7 @@ jobs:
     name: OTP ${{matrix.pair.otp}} / Elixir ${{matrix.pair.elixir}}
     services:
       rabbitmq:
-        image: rabbitmq
+        image: rabbitmq:management-alpine
         ports:
           - 5672/tcp
           - 15672:15672
