@@ -53,7 +53,7 @@ defmodule Rambla.Handler do
       defp fqn_id(name) when is_binary(name), do: Module.concat(__MODULE__, Macro.camelize(name))
 
       @doc false
-      def child_spec(opts \\ []) do
+      def pool_spec(opts \\ []) do
         {connection, opts} = Keyword.pop(opts, :connection, %{})
         {options, opts} = Keyword.pop(opts, :options, [])
 

@@ -5,9 +5,9 @@ defmodule Test.Rambla do
   setup_all do
     # v1.0
     modern_amqp =
-      [connection_options: [exchange: "amq.direct"], count: 3]
-      |> Rambla.Handlers.Amqp.children_specs()
-      |> Enum.map(&start_supervised!/1)
+      start_supervised!(
+        {Rambla.Handlers.Amqp, [connection_options: [exchange: "amq.direct"], count: 3]}
+      )
 
     # v0.0
 

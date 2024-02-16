@@ -1,6 +1,7 @@
 defmodule Rambla.Handlers.Amqp do
   @moduledoc """
-  Default handler for AMQP connections.
+  Default handler for AMQP connections. For this handler to work properly,
+    one must include and start `:amqp` application with the config like
 
   ```elixir
   config :amqp,
@@ -11,10 +12,9 @@ defmodule Rambla.Handlers.Amqp do
       chan_1: [connection: :local_conn]
     ]
 
-  # Then you can access the connection/channel via AMQP.Application.
+  # Then you can access the connection/channel via `Rambla.Handlers.Amqp` as
 
-  {:ok, chan} = AMQP.Application.get_channel(:mychan)
-  :ok = AMQP.Basic.publish(chan, "", "", "Hello")
+  Rambla.Handlers.Amqp.publish(:chan_1, %{message: %{foo: 42}, exchange: "rambla"})
   ```
   """
 
@@ -30,15 +30,20 @@ defmodule Rambla.Handlers.Amqp do
     {exchange, options} = Map.pop(options, :exchange, "")
     {declare?, options} = Map.pop(options, :declare?, false)
     {routing_key, options} = Map.pop(options, :routing_key, "")
+    {channel_provider, options} = Map.pop(options, :channel_provider, AMQP.Application)
+    {channel_publisher, options} = Map.pop(options, :channel_publisher, AMQP.Basic)
 
     with {:ok, json} <- Jason.encode(message),
-         {:ok, chan} <- AMQP.Application.get_channel(name),
+         {:ok, chan} <- channel_provider.get_channel(name),
          :ok <- maybe_declare_exchange(declare?, chan, exchange),
-         do: AMQP.Basic.publish(chan, exchange, routing_key, json, Map.to_list(options))
+         do: channel_publisher.publish(chan, exchange, routing_key, json, Map.to_list(options))
   end
 
-  def handle_publish(callback, %{connection: %{channel: name}}) when is_function(callback, 1) do
-    with {:ok, chan} <- AMQP.Application.get_channel(name),
+  def handle_publish(callback, %{connection: %{channel: name}, options: options})
+      when is_function(callback, 1) do
+    channel_provider = Map.get(options, :channel_provider, AMQP.Application)
+
+    with {:ok, chan} <- channel_provider.get_channel(name),
          do: callback.(chan)
   end
 
@@ -70,12 +75,48 @@ defmodule Rambla.Handlers.Amqp do
         else: fn _ -> connection_options end
 
     for {name, params} <- Application.get_env(:amqp, :channels) do
-      options
+      conn_opts = connection_options.(name)
+
+      # make it `pool_options` if more options are needed
+      {count, conn_opts} = Keyword.pop(conn_opts, :count)
+
+      count
+      |> is_nil()
+      |> if(do: options, else: Keyword.put(options, :count, count))
       |> Keyword.put(:id, name)
       |> Keyword.put_new(:connection, %{channel: name, params: params})
-      |> Keyword.put_new(:options, connection_options.(name))
-      |> child_spec()
+      |> Keyword.put_new(:options, conn_opts)
+      |> pool_spec()
     end
+  end
+
+  @spec start_link([
+          Supervisor.option()
+          | Supervisor.init_option()
+          | {:connection_options, keyword() | (term() -> keyword())}
+          | {:count, non_neg_integer()}
+        ]) ::
+          Supervisor.on_start()
+  @doc "The entry point: this would start a supervisor with all the pools and stuff"
+  def start_link(options \\ []) do
+    {sup_opts, opts} =
+      Keyword.split(
+        options,
+        ~w|name strategy max_restarts max_seconds max_children extra_arguments|a
+      )
+
+    opts |> children_specs() |> Supervisor.start_link([{:strategy, :one_for_one} | sup_opts])
+  end
+
+  @doc false
+  def child_spec(options) do
+    %{
+      id: __MODULE__,
+      start: {__MODULE__, :start_link, [options]},
+      type: :worker,
+      restart: :permanent,
+      shutdown: 500
+    }
   end
 
   defp maybe_declare_exchange(false, _, _), do: :ok
