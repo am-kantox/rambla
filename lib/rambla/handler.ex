@@ -102,7 +102,7 @@ defmodule Rambla.Handler do
       @impl true
       def on_error(error, id) do
         Logger.warning("[🖇️] #{__MODULE__}[#{id}] → ✗ " <> inspect(error))
-        Finitomata.Pool.run(id, :atom)
+        Finitomata.Pool.run(id, :atom, nil)
       end
 
       defoverridable on_result: 2, on_error: 2
@@ -123,7 +123,7 @@ defmodule Rambla.Handler do
       ```
       """
       def publish(id, payload) do
-        id |> fqn_id() |> Finitomata.Pool.run(payload)
+        id |> fqn_id() |> Finitomata.Pool.run(payload, nil)
       end
 
       @behaviour Rambla.Handler
