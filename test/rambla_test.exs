@@ -9,6 +9,9 @@ defmodule Test.Rambla do
         {Rambla.Handlers.Amqp, [connection_options: [exchange: "amq.direct"], count: 3]}
       )
 
+    modern_redis =
+      start_supervised!({Rambla.Handlers.Redis, [count: 3]})
+
     # v0.0
 
     opts = [
@@ -46,7 +49,7 @@ defmodule Test.Rambla do
 
     Application.ensure_all_started(:telemetria)
 
-    %{pools: pools, modern_amqp: modern_amqp}
+    %{pools: pools, modern_amqp: modern_amqp, modern_redis: modern_redis}
   end
 
   test "pools are ok", %{pools: pools} do
@@ -64,6 +67,32 @@ defmodule Test.Rambla do
     assert result
     assert :ok = AMQP.Basic.ack(chan, tag)
     assert {:empty, _} = AMQP.Basic.get(chan, "rambla-queue-1")
+    AMQP.Channel.close(chan)
+  end
+
+  test "modern works with rabbit: bulk update" do
+    Rambla.Handlers.Amqp.publish(:chan_1, [
+      %{
+        message: %{bar: 42},
+        exchange: "rambla-exchange-4"
+      },
+      %{
+        message: %{baz: 42},
+        exchange: "rambla-exchange-4"
+      }
+    ])
+
+    {:ok, conn} = AMQP.Application.get_connection(:local_conn)
+    {:ok, chan} = AMQP.Channel.open(conn)
+
+    [{result1, tag1}, {result2, tag2}] = [
+      amqp_wait(chan, "rambla-queue-4", "{\"bar\":42}"),
+      amqp_wait(chan, "rambla-queue-4", "{\"baz\":42}")
+    ]
+
+    assert result1 and result2
+    assert [:ok, :ok] = Enum.map([tag1, tag2], &AMQP.Basic.ack(chan, &1))
+    assert {:empty, _} = AMQP.Basic.get(chan, "rambla-queue-4")
     AMQP.Channel.close(chan)
   end
 

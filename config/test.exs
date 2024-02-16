@@ -12,6 +12,19 @@ config :amqp,
   ]
 
 config :rambla,
+  redis: [
+    connections: [
+      local_conn: [
+        host: System.get_env("REDIS_HOST", "127.0.0.1"),
+        port: String.to_integer(System.get_env("REDIS_PORT", "6379")),
+        password: System.get_env("REDIS_PASSWORD", ""),
+        database: 0
+      ]
+    ],
+    channels: [chan_1: [connection: :local_conn]]
+  ]
+
+config :rambla,
   amqp: [
     host: System.get_env("RABBITMQ_HOST", "127.0.0.1"),
     port: String.to_integer(System.get_env("RABBITMQ_PORT", "5672")),
