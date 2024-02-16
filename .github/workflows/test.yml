@@ -13,7 +13,7 @@ jobs:
         image: rabbitmq
         ports:
           - 5672/tcp
-          - 15672/15672
+          - 15672:15672
         options: >-
           --health-cmd "rabbitmqctl node_health_check"
           --health-interval 10s
