@@ -52,6 +52,13 @@ defmodule Rambla.Handler do
   @doc "The callback to get to the configuration"
   @callback config :: [{:connections, keyword()} | {:channels, keyword()}]
 
+  @doc "The callback to be called when retries exhausted"
+  @callback on_fatal(Finitomata.id(), %{
+              required(:payload) => any(),
+              required(:message) => String.t(),
+              retries: non_neg_integer()
+            }) :: :ok
+
   @doc "If specified, these services will be started before pools under `:rest_for_one`"
   @callback external_servers(Finitomata.Pool.id()) :: [
               {module(), [any()]} | Supervisor.child_spec()
@@ -212,7 +219,10 @@ defmodule Rambla.Handler do
       end
 
       def actor(payload, state) do
-        {retries, payload} = Map.pop(payload, :retries, state.retries)
+        {retries, payload} =
+          if is_map(payload),
+            do: Map.pop(payload, :retries, state.retries),
+            else: {state.retries, payload}
 
         case handle_publish(payload, state) do
           {:ok, result} ->
@@ -231,6 +241,9 @@ defmodule Rambla.Handler do
                message: "Error publishing message: ‹#{inspect(payload)}›",
                retries: retries
              }}
+
+          result ->
+            {:ok, result}
         end
       end
 
@@ -240,9 +253,8 @@ defmodule Rambla.Handler do
       end
 
       @impl Finitomata.Pool.Actor
-      def on_error(%{payload: payload, message: message, retries: retries} = error, id)
-          when retries <= 0 do
-        Logger.error("[🖇️] #{__MODULE__}[#{id}] → ✗✗ " <> inspect(error))
+      def on_error(%{retries: retries} = error, id) when retries <= 0 do
+        on_fatal(id, error)
       end
 
       def on_error(%{payload: payload, message: message} = error, id) do
@@ -289,7 +301,12 @@ defmodule Rambla.Handler do
       @impl Rambla.Handler
       def external_servers(_id), do: []
 
-      defoverridable external_servers: 1
+      @impl Rambla.Handler
+      def on_fatal(id, error) do
+        Logger.error("[🖇️] #{__MODULE__}[#{id}] → ✗✗ " <> inspect(error))
+      end
+
+      defoverridable external_servers: 1, on_fatal: 2
     end
   end
 end

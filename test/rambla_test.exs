@@ -12,6 +12,9 @@ defmodule Test.Rambla do
     modern_redis =
       start_supervised!({Rambla.Handlers.Redis, [count: 3]})
 
+    modern_httpc =
+      start_supervised!({Rambla.Handlers.Httpc, [count: 2]})
+
     # v0.0
 
     opts = [
@@ -49,7 +52,12 @@ defmodule Test.Rambla do
 
     Application.ensure_all_started(:telemetria)
 
-    %{pools: pools, modern_amqp: modern_amqp, modern_redis: modern_redis}
+    %{
+      pools: pools,
+      modern_amqp: modern_amqp,
+      modern_redis: modern_redis,
+      modern_httpc: modern_httpc
+    }
   end
 
   test "pools are ok", %{pools: pools} do
@@ -239,6 +247,14 @@ defmodule Test.Rambla do
   test "works with mocks" do
     Rambla.ConnectionPool.publish(Rambla.Foo, %{__action__: self(), foo: 42})
     assert_receive %{message: %{foo: 42}, payload: %{bar: :baz}}
+  end
+
+  test "modern works with httpc" do
+    Rambla.Handlers.Httpc.publish(:chan_1, %{foo: 42}, self())
+    assert_receive {:transition, :success, _, _}, 1_000
+
+    Rambla.Handlers.Httpc.publish(:chan_2, %{foo: 42}, self())
+    assert_receive {:transition, :failure, _, _}, 1_000
   end
 
   defp amqp_wait(chan, queue, expected, times \\ 10)
