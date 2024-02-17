@@ -57,6 +57,13 @@ defmodule Rambla.Handler do
               {module(), [any()]} | Supervisor.child_spec()
             ]
 
+  defmodule RetryState do
+    @moduledoc false
+    @max_retries Application.compile_env(:rambla, :max_retries, 5)
+    defstruct retries: @max_retries, payload: nil
+    def max_retries, do: @max_retries
+  end
+
   @doc false
   defmacro __using__(opts \\ []) do
     # credo:disable-for-next-line Credo.Check.Refactor.LongQuoteBlocks
@@ -65,7 +72,7 @@ defmodule Rambla.Handler do
 
       @behaviour Finitomata.Pool.Actor
 
-      defstruct connection: %{}, options: %{}
+      defstruct connection: %{}, options: %{}, retries: Rambla.Handler.RetryState.max_retries()
 
       @doc false
       defp fqn_id(nil), do: __MODULE__
@@ -84,6 +91,7 @@ defmodule Rambla.Handler do
       defp do_pool_spec({_, []}, opts) do
         {connection, opts} = Keyword.pop(opts, :connection, %{})
         {options, opts} = Keyword.pop(opts, :options, [])
+        {retries, opts} = Keyword.pop(opts, :retries, [])
 
         opts
         |> Keyword.update(:id, __MODULE__, &fqn_id/1)
@@ -92,7 +100,8 @@ defmodule Rambla.Handler do
           :payload,
           struct!(__MODULE__, %{
             connection: connection,
-            options: Keyword.merge(unquote(opts), options)
+            options: Keyword.merge(unquote(opts), options),
+            retries: retries
           })
         )
         |> Finitomata.Pool.pool_spec()
@@ -139,12 +148,16 @@ defmodule Rambla.Handler do
           # make it `pool_options` if more options are needed
           {count, conn_opts} = Keyword.pop(conn_opts, :count)
 
+          {retries, conn_opts} =
+            Keyword.pop(conn_opts, :retries, Rambla.Handler.RetryState.max_retries())
+
           count
           |> is_nil()
           |> if(do: options, else: Keyword.put(options, :count, count))
           |> Keyword.put(:id, name)
           |> Keyword.put_new(:connection, %{channel: name, params: params})
           |> Keyword.put_new(:options, conn_opts)
+          |> Keyword.put_new(:retries, retries)
           |> pool_spec()
         end
       end
@@ -194,7 +207,13 @@ defmodule Rambla.Handler do
           else: actor(payload, state)
       end
 
+      def actor(%RetryState{payload: payload, retries: retries}, state) do
+        actor(payload, %{state | retries: retries})
+      end
+
       def actor(payload, state) do
+        {retries, payload} = Map.pop(payload, :retries, state.retries)
+
         case handle_publish(payload, state) do
           {:ok, result} ->
             {:ok, result}
@@ -203,11 +222,15 @@ defmodule Rambla.Handler do
             {:ok, payload}
 
           {:error, message} ->
-            {:error, %{payload: payload, message: message}}
+            {:error, %{payload: payload, message: message, retries: retries}}
 
           :error ->
             {:error,
-             %{payload: payload, message: "Error publishing message: ‹#{inspect(payload)}›"}}
+             %{
+               payload: payload,
+               message: "Error publishing message: ‹#{inspect(payload)}›",
+               retries: retries
+             }}
         end
       end
 
@@ -217,9 +240,21 @@ defmodule Rambla.Handler do
       end
 
       @impl Finitomata.Pool.Actor
-      def on_error(error, id) do
-        Logger.warning("[🖇️] #{__MODULE__}[#{id}] → ✗ " <> inspect(error))
-        Finitomata.Pool.run(id, :atom, nil)
+      def on_error(%{payload: payload, message: message, retries: retries} = error, id)
+          when retries <= 0 do
+        Logger.error("[🖇️] #{__MODULE__}[#{id}] → ✗✗ " <> inspect(error))
+      end
+
+      def on_error(%{payload: payload, message: message} = error, id) do
+        Logger.warning("[🖇️] #{__MODULE__}[#{id}] → ✗ " <> inspect(message))
+
+        retries = Map.get(error, :retries, Rambla.Handler.RetryState.max_retries())
+
+        Finitomata.Pool.run(
+          id,
+          %Rambla.Handler.RetryState{payload: payload, retries: retries - 1},
+          nil
+        )
       end
 
       defoverridable on_result: 2, on_error: 2
