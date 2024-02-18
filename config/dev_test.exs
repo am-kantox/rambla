@@ -14,6 +14,19 @@ config :amqp,
   ],
   channels: [chan_1: [connection: :local_conn]]
 
+config :ex_aws,
+  access_key_id: [{:system, "AWS_ACCESS_KEY_ID"}, :instance_role],
+  secret_access_key: [{:system, "AWS_SECRET_ACCESS_KEY"}, :instance_role],
+  hackney_opts: [follow_redirect: true, recv_timeout: 30_000],
+  region: {:system, "AWS_REGION"},
+  json_codec: Jason,
+  normalize_path: false,
+  retries: [
+    max_attempts: 1,
+    base_backoff_in_ms: 10,
+    max_backoff_in_ms: 10_000
+  ]
+
 config :rambla,
   redis: [
     connections: [
@@ -67,6 +80,18 @@ config :rambla,
     ],
     channels: [chan_3: [connection: :gmail, options: [retries: 3]]]
   ],
+  s3: [
+    connections: [
+      bucket_1: [bucket: "test-bucket", path: ""]
+    ],
+    channels: [
+      chan_1: [
+        connection: :bucket_1,
+        options: [connector: Rambla.Mocks.ExAws.S3, requestor: Rambla.Mocks.ExAws]
+      ]
+    ]
+  ],
+
   # ===== << ======
   amqp: [
     host: System.get_env("RABBITMQ_HOST", "127.0.0.1"),

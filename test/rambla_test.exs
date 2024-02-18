@@ -15,6 +15,9 @@ defmodule Test.Rambla do
     modern_httpc =
       start_supervised!({Rambla.Handlers.Httpc, [count: 2]})
 
+    modern_smtp =
+      start_supervised!({Rambla.Handlers.Smtp, [count: 2]})
+
     # v0.0
 
     opts = [
@@ -56,7 +59,8 @@ defmodule Test.Rambla do
       pools: pools,
       modern_amqp: modern_amqp,
       modern_redis: modern_redis,
-      modern_httpc: modern_httpc
+      modern_httpc: modern_httpc,
+      modern_smtp: modern_smtp
     }
   end
 
@@ -255,6 +259,17 @@ defmodule Test.Rambla do
 
     Rambla.Handlers.Httpc.publish(:chan_2, %{foo: 42}, self())
     assert_receive {:transition, :failure, _, _}, 1_000
+  end
+
+  @tag :skip
+  test "modern works with smtp" do
+    Rambla.Handlers.Smtp.publish(
+      :chan_3,
+      %{message: "Hi, John!\nComo estas?", to: "am@ambment.cat", retries: 1},
+      self()
+    )
+
+    assert_receive {:transition, :success, _, _}, 5_000
   end
 
   defp amqp_wait(chan, queue, expected, times \\ 10)

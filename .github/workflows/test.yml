@@ -28,6 +28,15 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+      # dynamodb-local:
+      #   command: "-jar DynamoDBLocal.jar -sharedDb -dbPath ./data"
+      #   image: "amazon/dynamodb-local:latest"
+      #   container_name: dynamodb-local
+      #   ports:
+      #     - "8000:8000"
+      #   volumes:
+      #     - "./docker/dynamodb:/home/dynamodblocal/data"
+      #   working_dir: /home/dynamodblocal    
     strategy:
       fail-fast: false
       matrix:
@@ -64,3 +73,8 @@ jobs:
           RABBITMQ_VHOST: "/"
           REDIS_HOST: localhost
           REDIS_PORT: ${{job.services.redis.ports[6379]}}
+          RAMBLA_SMTP_USERNAME: ${{secrets.RAMBLA_SMTP_USERNAME}}
+          RAMBLA_SMTP_PASSWORD: ${{secrets.RAMBLA_SMTP_PASSWORD}}
+          AWS_ACCESS_KEY_ID: ${{secrets.AWS_ACCESS_KEY_ID}}
+          AWS_SECRET_ACCESS_KEY: ${{secrets.AWS_SECRET_ACCESS_KEY}}
+          AWS_REGION: ${{secrets.AWS_REGION}}

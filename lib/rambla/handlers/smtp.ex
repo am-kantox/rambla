@@ -37,9 +37,9 @@ defmodule Rambla.Handlers.Smtp do
       chan_3: [connection: :gmail]
     ]
 
-  # Then you can access the connection/channel via `Rambla.Handlers.Amqp` as
+  # Then you can access the connection/channel via `Rambla.Handlers.Smtp` as
 
-  Rambla.Handlers.Redis.publish(:chan_3, "Hi John!\\nHow are you?")
+  Rambla.Handlers.Smtp.publish(:chan_3, "Hi John!\\nHow are you?")
   ```
   """
 

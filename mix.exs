@@ -75,6 +75,14 @@ defmodule Rambla.MixProject do
       {:gen_smtp, "~> 0.4 or ~> 1.0", optional: true},
       {:telemetria, "~> 0.4 or ~> 1.0", optional: true},
 
+      # s3
+      {:ex_aws, "~> 2.1"},
+      {:ex_aws_s3, "~> 2.0"},
+      {:ex_aws_sts, "~> 2.0"},
+      {:hackney, "~> 1.9"},
+      {:sweet_xml, "~> 0.6"},
+      {:configparser_ex, "~> 4.0"},
+
       # dev, test
       {:credo, "~> 1.0", only: [:dev, :ci], runtime: false},
       {:dialyxir, "~> 1.0", only: [:dev, :ci], runtime: false},
