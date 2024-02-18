@@ -26,6 +26,7 @@ end
 
 ## Changelog
 
+- **`1.1.0`** Complete rewrite, all the services are now controlled by `Finitomata.Pool`
 - **`1.0.0`** Modern era update
 - **`0.16.3`** Better error reporting, logging of insuccessfuly HTTP requests
 - **`0.16.0`** Several instances of service + Mocks

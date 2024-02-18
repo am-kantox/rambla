@@ -21,12 +21,15 @@ defmodule Rambla do
   ]
   ```
 
+  To start pools, simply embed `Rambla` into the supervision tree, it’d 
+    start a supervisor with children for all the configured services.
+
   Channel names are used across connections to publish messages.
     `Rambla.publish(:channel_1, message)` would publish the message to all channels
     named `channel_1`.
   """
 
-  @channels for {service, opts} <-
+  @channels for {service, opts} when is_list(opts) <-
                   Application.get_all_env(:rambla) ++ [{:amqp, Application.get_all_env(:amqp)}],
                 {:channels, opts} <- opts,
                 {name, _} <- opts,
@@ -35,6 +38,8 @@ defmodule Rambla do
 
   @doc "Returns a map `%{‹service› => [‹channels›]}`"
   def channels, do: @channels
+  @doc "Returns a list of all the configured connections"
+  def services, do: @channels |> Map.values() |> Enum.reduce(&Kernel.++/2) |> Enum.uniq()
 
   @doc false
   def handler_for_service(name) do
@@ -42,6 +47,29 @@ defmodule Rambla do
       [{_, _} | _] = cfg -> Keyword.get(cfg, :handler)
       _ -> nil
     end || Module.concat(Rambla.Handlers, name |> to_string() |> Macro.camelize())
+  end
+
+  use Supervisor
+
+  @doc "Starts the supervisor with all the configured services"
+  def start_link(opts \\ []) do
+    case Keyword.pop(opts, :name) do
+      {nil, opts} -> Supervisor.start_link(__MODULE__, opts)
+      {name, opts} -> Supervisor.start_link(__MODULE__, opts, name: name)
+    end
+  end
+
+  @impl true
+  def init(_opts) do
+    @channels
+    |> Map.values()
+    |> Enum.reduce(&Kernel.++/2)
+    |> Enum.uniq()
+    |> Enum.map(&handler_for_service/1)
+    |> case do
+      [] -> :ignore
+      children -> Supervisor.init(children, strategy: :one_for_one)
+    end
   end
 
   @enable_deprecated Application.compile_env(:rambla, :enable_deprecated, true)
