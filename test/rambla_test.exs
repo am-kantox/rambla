@@ -1,6 +1,12 @@
 defmodule Test.Rambla do
-  use ExUnit.Case, async: true
+  # use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
   doctest Rambla
+
+  import Mox
+
+  setup :set_mox_global
+  setup :verify_on_exit!
 
   setup_all do
     # v1.0
@@ -17,6 +23,9 @@ defmodule Test.Rambla do
 
     modern_smtp =
       start_supervised!({Rambla.Handlers.Smtp, [count: 2]})
+
+    modern_s3 =
+      start_supervised!({Rambla.Handlers.S3, [count: 2]})
 
     # v0.0
 
@@ -60,7 +69,8 @@ defmodule Test.Rambla do
       modern_amqp: modern_amqp,
       modern_redis: modern_redis,
       modern_httpc: modern_httpc,
-      modern_smtp: modern_smtp
+      modern_smtp: modern_smtp,
+      modern_s3: modern_s3
     }
   end
 
@@ -270,6 +280,20 @@ defmodule Test.Rambla do
     )
 
     assert_receive {:transition, :success, _, _}, 5_000
+  end
+
+  test "modern works with s3" do
+    expect(Rambla.Mocks.ExAws, :request, fn operation, %{} = _params ->
+      assert %ExAws.Operation.S3{} = operation
+      assert operation.http_method == :put
+      assert operation.bucket == "test-bucket"
+      assert operation.path == "some/path"
+
+      {:ok, %{body: "file contents"}}
+    end)
+
+    Rambla.Handlers.S3.publish(:chan_1, %{message: "file contents"}, self())
+    assert_receive {:transition, :success, _, _}, 1_000
   end
 
   defp amqp_wait(chan, queue, expected, times \\ 10)

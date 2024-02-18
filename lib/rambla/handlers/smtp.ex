@@ -51,12 +51,13 @@ defmodule Rambla.Handlers.Smtp do
   @doc false
   def handle_publish(
         %{message: message} = payload,
-        %{connection: %{channel: name}, options: options}
+        %{connection: %{channel: name}} = state
       ) do
+    options = extract_options(payload, state)
+
     conn = config() |> get_in([:channels, name, :connection])
     params = get_in(config(), [:connections, conn])
 
-    options = options |> Map.new() |> Map.merge(Map.delete(payload, :message))
     {generator, _options} = Map.pop(options, :generator, nil)
 
     message =

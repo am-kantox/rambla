@@ -24,9 +24,10 @@ defmodule Rambla.Handlers.Amqp do
   @doc false
   def handle_publish(
         %{message: message} = payload,
-        %{connection: %{channel: name}, options: options}
+        %{connection: %{channel: name}} = state
       ) do
-    options = options |> Map.new() |> Map.merge(Map.delete(payload, :message))
+    options = extract_options(payload, state)
+
     {exchange, options} = Map.pop(options, :exchange, "")
     {declare?, options} = Map.pop(options, :declare?, false)
     {routing_key, options} = Map.pop(options, :routing_key, "")

@@ -84,6 +84,7 @@ defmodule Rambla.MixProject do
       {:configparser_ex, "~> 4.0"},
 
       # dev, test
+      {:mox, "~> 1.0", only: [:dev, :ci, :test]},
       {:credo, "~> 1.0", only: [:dev, :ci], runtime: false},
       {:dialyxir, "~> 1.0", only: [:dev, :ci], runtime: false},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}

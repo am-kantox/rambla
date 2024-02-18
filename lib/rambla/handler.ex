@@ -271,6 +271,18 @@ defmodule Rambla.Handler do
 
       defoverridable on_result: 2, on_error: 2
 
+      def extract_options(payload, %{connection: connection, options: options}) do
+        payload_options =
+          is_map(payload) and Map.has_key?(payload, :message) and Map.delete(payload, :message)
+
+        connection_options =
+          connection |> get_in([:params, :options]) |> Kernel.||([]) |> Map.new()
+
+        connection_options |> Map.merge(Map.new(options)) |> Map.merge(payload_options)
+      end
+
+      defoverridable extract_options: 2
+
       @doc """
       An interface to publish messages using the FSM pool.
 

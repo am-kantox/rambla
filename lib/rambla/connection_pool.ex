@@ -1,5 +1,6 @@
 defmodule Rambla.ConnectionPool do
   @moduledoc false
+  @moduledoc deprecated: "Use configuration instead"
 
   use Rambla.Telemetria
   use DynamicSupervisor
@@ -85,7 +86,7 @@ defmodule Rambla.ConnectionPool do
   def pools, do: DynamicSupervisor.which_children(Rambla.ConnectionPool)
 
   @spec publish(
-          type :: atom(),
+          type :: atom() | {atom(), any()},
           messages :: Rambla.Connection.message() | Rambla.Connection.messages(),
           opts :: map() | keyword()
         ) ::

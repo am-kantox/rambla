@@ -25,9 +25,10 @@ defmodule Rambla.Handlers.Redis do
   @doc false
   def handle_publish(
         %{message: message} = payload,
-        %{connection: %{channel: name}, options: options}
+        %{connection: %{channel: name}} = state
       ) do
-    options = options |> Map.new() |> Map.merge(Map.delete(payload, :message))
+    options = extract_options(payload, state)
+
     {serializer, _options} = Map.pop(options, :serializer, Jason)
 
     for {k, v} <- message do

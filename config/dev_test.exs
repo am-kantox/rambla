@@ -18,7 +18,8 @@ config :ex_aws,
   access_key_id: [{:system, "AWS_ACCESS_KEY_ID"}, :instance_role],
   secret_access_key: [{:system, "AWS_SECRET_ACCESS_KEY"}, :instance_role],
   hackney_opts: [follow_redirect: true, recv_timeout: 30_000],
-  region: {:system, "AWS_REGION"},
+  # region: {:system, "AWS_REGION"},
+  region: "us-west-1",
   json_codec: Jason,
   normalize_path: false,
   retries: [
@@ -82,14 +83,15 @@ config :rambla,
   ],
   s3: [
     connections: [
-      bucket_1: [bucket: "test-bucket", path: ""]
+      bucket_1: [bucket: "test-bucket", path: "some/path"]
     ],
     channels: [
       chan_1: [
         connection: :bucket_1,
-        options: [connector: Rambla.Mocks.ExAws.S3, requestor: Rambla.Mocks.ExAws]
+        options: [connector: Rambla.Mocks.ExAws]
       ]
-    ]
+    ],
+    handler: Rambla.Handlers.S3
   ],
 
   # ===== << ======

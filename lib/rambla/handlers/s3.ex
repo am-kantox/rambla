@@ -44,13 +44,14 @@ defmodule Rambla.Handlers.S3 do
   @doc false
   def handle_publish(
         %{message: message} = payload,
-        %{connection: %{channel: name}, options: options}
+        %{connection: %{channel: name}} = state
       ) do
+    options = extract_options(payload, state)
+
     conn = config() |> get_in([:channels, name, :connection])
     bucket = get_in(config(), [:connections, conn, :bucket])
     path = get_in(config(), [:connections, conn, :path]) || ""
 
-    options = options |> Map.new() |> Map.merge(Map.delete(payload, :message))
     {connector, options} = Map.pop(options, :connector, ExAws)
 
     do_handle_publish(File.exists?(message), connector, {bucket, path}, message, options)
@@ -71,6 +72,8 @@ defmodule Rambla.Handlers.S3 do
   def config, do: Application.get_env(:rambla, :s3)
 
   def do_handle_publish(false, connector, {bucket, path}, contents, opts) do
+    {connector, bucket, path, contents, opts}
+
     bucket
     |> ExAws.S3.put_object(path, contents)
     |> connector.request(opts)
