@@ -156,6 +156,14 @@ defmodule Test.Rambla do
 
     assert result
     assert :ok = AMQP.Basic.ack(chan, tag)
+
+    Enum.reduce_while(92..110, :non_empty, fn _, :non_empty ->
+      case AMQP.Basic.get(chan, "rambla-queue-2") do
+        {:empty, _} = exhausted -> {:halt, exhausted}
+        _ -> {:cont, :non_empty}
+      end
+    end)
+
     assert {:empty, _} = AMQP.Basic.get(chan, "rambla-queue-2")
     AMQP.Channel.close(chan)
   end
