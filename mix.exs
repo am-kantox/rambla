@@ -2,7 +2,7 @@ defmodule Rambla.MixProject do
   use Mix.Project
 
   @app :rambla
-  @version "1.1.0"
+  @version "1.1.1"
 
   def project do
     [
