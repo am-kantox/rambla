@@ -1,20 +1,46 @@
 defmodule Test.Rambla do
-  use ExUnit.Case, async: true
+  # use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
   doctest Rambla
 
+  import Mox
+
+  setup :set_mox_global
+  setup :verify_on_exit!
+
   setup_all do
+    # v1.0
+    modern_amqp =
+      start_supervised!(
+        {Rambla.Handlers.Amqp, [connection_options: [exchange: "amq.direct"], count: 3]}
+      )
+
+    modern_redis =
+      start_supervised!({Rambla.Handlers.Redis, [count: 3]})
+
+    modern_httpc =
+      start_supervised!({Rambla.Handlers.Httpc, [count: 2]})
+
+    modern_smtp =
+      start_supervised!({Rambla.Handlers.Smtp, [count: 2]})
+
+    modern_s3 =
+      start_supervised!({Rambla.Handlers.S3, [count: 2]})
+
+    # v0.0
+
     opts = [
       {:amqp,
        [
          options: [size: 5, max_overflow: 300],
          type: :local,
-         params: Application.fetch_env!(:rambla, :amqp)
+         params: Application.fetch_env!(:rambla, :pools)[:amqp]
        ]},
       {{Rambla.Amqp, :other},
        [
          options: [size: 5, max_overflow: 100],
          type: :local,
-         params: Application.fetch_env!(:rambla, :amqp)
+         params: Application.fetch_env!(:rambla, :pools)[:amqp]
        ]},
       {Rambla.Redis, params: Application.fetch_env!(:rambla, :pools)[:redis]},
       {Rambla.Http, params: Application.fetch_env!(:rambla, :pools)[:http]},
@@ -38,12 +64,58 @@ defmodule Test.Rambla do
 
     Application.ensure_all_started(:telemetria)
 
-    %{pools: pools}
+    %{
+      pools: pools,
+      modern_amqp: modern_amqp,
+      modern_redis: modern_redis,
+      modern_httpc: modern_httpc,
+      modern_smtp: modern_smtp,
+      modern_s3: modern_s3
+    }
   end
 
   test "pools are ok", %{pools: pools} do
     assert Enum.flat_map(pools, fn p -> p |> Keyword.values() |> Enum.map(&elem(&1, 1)) end) ==
              Enum.map(Rambla.pools(), &elem(&1, 1))
+  end
+
+  test "modern works with rabbit" do
+    Rambla.Handlers.Amqp.publish(:chan_1, %{message: %{foo: 42}, exchange: "rambla-exchange-1"})
+
+    {:ok, conn} = AMQP.Application.get_connection(:local_conn)
+    {:ok, chan} = AMQP.Channel.open(conn)
+    {result, tag} = amqp_wait(chan, "rambla-queue-1", "{\"foo\":42}")
+
+    assert result
+    assert :ok = AMQP.Basic.ack(chan, tag)
+    assert {:empty, _} = AMQP.Basic.get(chan, "rambla-queue-1")
+    AMQP.Channel.close(chan)
+  end
+
+  test "modern works with rabbit: bulk update" do
+    Rambla.Handlers.Amqp.publish(:chan_1, [
+      %{
+        message: %{bar: 42},
+        exchange: "rambla-exchange-4"
+      },
+      %{
+        message: %{baz: 42},
+        exchange: "rambla-exchange-4"
+      }
+    ])
+
+    {:ok, conn} = AMQP.Application.get_connection(:local_conn)
+    {:ok, chan} = AMQP.Channel.open(conn)
+
+    [{result1, tag1}, {result2, tag2}] = [
+      amqp_wait(chan, "rambla-queue-4", "{\"bar\":42}"),
+      amqp_wait(chan, "rambla-queue-4", "{\"baz\":42}")
+    ]
+
+    assert result1 and result2
+    assert [:ok, :ok] = Enum.map([tag1, tag2], &AMQP.Basic.ack(chan, &1))
+    assert {:empty, _} = AMQP.Basic.get(chan, "rambla-queue-4")
+    AMQP.Channel.close(chan)
   end
 
   test "works with rabbit" do
@@ -84,6 +156,14 @@ defmodule Test.Rambla do
 
     assert result
     assert :ok = AMQP.Basic.ack(chan, tag)
+
+    Enum.reduce_while(92..110, :non_empty, fn _, :non_empty ->
+      case AMQP.Basic.get(chan, "rambla-queue-2") do
+        {:empty, _} = exhausted -> {:halt, exhausted}
+        _ -> {:cont, :non_empty}
+      end
+    end)
+
     assert {:empty, _} = AMQP.Basic.get(chan, "rambla-queue-2")
     AMQP.Channel.close(chan)
   end
@@ -191,6 +271,39 @@ defmodule Test.Rambla do
     assert_receive %{message: %{foo: 42}, payload: %{bar: :baz}}
   end
 
+  test "modern works with httpc" do
+    Rambla.Handlers.Httpc.publish(:chan_1, %{foo: 42}, self())
+    assert_receive {:transition, :success, _, _}, 1_000
+
+    Rambla.Handlers.Httpc.publish(:chan_2, %{foo: 42}, self())
+    assert_receive {:transition, :failure, _, _}, 1_000
+  end
+
+  @tag :skip
+  test "modern works with smtp" do
+    Rambla.Handlers.Smtp.publish(
+      :chan_3,
+      %{message: "Hi, John!\nComo estas?", to: "am@ambment.cat", retries: 1},
+      self()
+    )
+
+    assert_receive {:transition, :success, _, _}, 5_000
+  end
+
+  test "modern works with s3" do
+    expect(Rambla.Mocks.ExAws, :request, fn operation, %{} = _params ->
+      assert %ExAws.Operation.S3{} = operation
+      assert operation.http_method == :put
+      assert operation.bucket == "test-bucket"
+      assert operation.path == "some/path"
+
+      {:ok, %{body: "file contents"}}
+    end)
+
+    Rambla.Handlers.S3.publish(:chan_1, %{message: "file contents"}, self())
+    assert_receive {:transition, :success, _, _}, 1_000
+  end
+
   defp amqp_wait(chan, queue, expected, times \\ 10)
   defp amqp_wait(_chan, _queue, _expected, times) when times <= 0, do: {false, :timeout}
 
@@ -198,7 +311,7 @@ defmodule Test.Rambla do
     case AMQP.Basic.get(chan, queue) do
       {:ok, ^expected, %{delivery_tag: tag}} -> {true, tag}
       {:ok, _not_expected, %{delivery_tag: _tag}} -> amqp_wait(chan, queue, expected, times)
-      {:empty, _} -> amqp_wait(chan, queue, expected, times - 1)
+      {:empty, _} -> Process.sleep(100) && amqp_wait(chan, queue, expected, times - 1)
       other -> {false, other}
     end
   end

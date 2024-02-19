@@ -2,13 +2,13 @@ defmodule Rambla.MixProject do
   use Mix.Project
 
   @app :rambla
-  @version "1.0.1"
+  @version "1.1.0"
 
   def project do
     [
       app: @app,
       version: @version,
-      elixir: "~> 1.14",
+      elixir: "~> 1.15",
       elixirc_paths: elixirc_paths(Mix.env()),
       compilers: compilers(Mix.env()),
       start_permanent: Mix.env() == :prod,
@@ -67,14 +67,24 @@ defmodule Rambla.MixProject do
       {:plug, "~> 1.9"},
       {:poolboy, "~> 1.5"},
       {:ranch, "~> 1.7 or ~> 2.0"},
+      {:finitomata, "~> 0.18"},
 
       # optional backends
-      {:amqp, "~> 1.2 or ~> 2.0 or ~> 3.0", optional: true},
+      {:amqp, "~> 3.0", optional: true},
       {:redix, "~> 1.0", optional: true},
       {:gen_smtp, "~> 0.4 or ~> 1.0", optional: true},
       {:telemetria, "~> 0.4 or ~> 1.0", optional: true},
 
+      # s3
+      {:ex_aws, "~> 2.1", optional: true},
+      {:ex_aws_s3, "~> 2.0", optional: true},
+      {:ex_aws_sts, "~> 2.0", optional: true},
+      {:hackney, "~> 1.9", optional: true},
+      {:sweet_xml, "~> 0.6", optional: true},
+      {:configparser_ex, "~> 4.0", optional: true},
+
       # dev, test
+      {:mox, "~> 1.0", only: [:dev, :ci, :test]},
       {:credo, "~> 1.0", only: [:dev, :ci], runtime: false},
       {:dialyxir, "~> 1.0", only: [:dev, :ci], runtime: false},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
@@ -100,7 +110,21 @@ defmodule Rambla.MixProject do
       logo: "stuff/logo-48x48.png",
       extras: ["README.md", "stuff/getting-started.md"],
       groups_for_modules: [
-        Backends: [Rambla.Amqp, Rambla.Http, Rambla.Redis, Rambla.Smtp],
+        Handlers: [
+          Rambla.Handlers.Amqp,
+          Rambla.Handlers.Redis,
+          Rambla.Handlers.S3,
+          Rambla.Handlers.Httpc,
+          Rambla.Handlers.Smtp
+        ],
+        Deprecated: [Rambla.Connection, Rambla.Connection.Config],
+        "Deprecated Backends": [
+          Rambla.Amqp,
+          Rambla.Http,
+          Rambla.Redis,
+          Rambla.Smtp,
+          Rambla.Process
+        ],
         Expections: [Rambla.Exception]
       ]
     ]

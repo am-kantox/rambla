@@ -2,25 +2,11 @@ import Config
 
 config :telemetria, enabled: false
 
+import_config("dev_test.exs")
+
 config :rambla,
-  amqp: [
-    host: System.get_env("RABBITMQ_HOST", "127.0.0.1"),
-    port: String.to_integer(System.get_env("RABBITMQ_PORT", "5672")),
-    username: System.get_env("RABBITMQ_USERNAME", "guest"),
-    password: System.get_env("RABBITMQ_PASSWORD", "guest")
-  ],
   pools:
     [
-      redis: [
-        host: System.get_env("REDIS_HOST", "127.0.0.1"),
-        port: String.to_integer(System.get_env("REDIS_PORT", "6379")),
-        password: System.get_env("REDIS_PASSWORD", ""),
-        database: 0
-      ],
-      amqp: [
-        virtual_host: System.get_env("RABBITMQ_VHOST", "/"),
-        x_message_ttl: "4000"
-      ],
       http: [
         host: System.get_env("RAMBLA_HTTP_HOST", "127.0.0.1"),
         port: String.to_integer(System.get_env("RAMBLA_HTTP_PORT", "80"))

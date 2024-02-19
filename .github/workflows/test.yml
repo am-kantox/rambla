@@ -10,23 +10,43 @@ jobs:
     name: OTP ${{matrix.pair.otp}} / Elixir ${{matrix.pair.elixir}}
     services:
       rabbitmq:
-        image: rabbitmq
+        image: rabbitmq:management-alpine
         ports:
-          - 5672/tcp
+          - 5672:5672
+          - 15672:15672
+        options: >-
+          --health-cmd "rabbitmqctl node_health_check"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
       redis:
         image: redis
         ports:
           - 6379/tcp
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      # dynamodb-local:
+      #   command: "-jar DynamoDBLocal.jar -sharedDb -dbPath ./data"
+      #   image: "amazon/dynamodb-local:latest"
+      #   container_name: dynamodb-local
+      #   ports:
+      #     - "8000:8000"
+      #   volumes:
+      #     - "./docker/dynamodb:/home/dynamodblocal/data"
+      #   working_dir: /home/dynamodblocal    
     strategy:
       fail-fast: false
       matrix:
         include:
           - pair:
-              otp: 22.3
-              elixir: 1.11.1
+              otp: 25.3
+              elixir: 1.15
           - pair:
-              otp: 24.3
-              elixir: 1.13.3
+              otp: 26.2
+              elixir: 1.16
     steps:
       - uses: actions/checkout@v2
       - uses: erlef/setup-elixir@v1
@@ -38,6 +58,10 @@ jobs:
           mix local.rebar --force
           mix local.hex --force
           mix do deps.get, deps.compile, compile
+      - name: Setup RabbitMQ
+        run: |
+          curl -X POST -u guest:guest -H 'Content-Type: application/json' -T priv/rabbitmq/config.json http://localhost:15672/api/definitions
+
       - name: Run All Tests
         run: |
           mix test
@@ -49,3 +73,8 @@ jobs:
           RABBITMQ_VHOST: "/"
           REDIS_HOST: localhost
           REDIS_PORT: ${{job.services.redis.ports[6379]}}
+          RAMBLA_SMTP_USERNAME: ${{secrets.RAMBLA_SMTP_USERNAME}}
+          RAMBLA_SMTP_PASSWORD: ${{secrets.RAMBLA_SMTP_PASSWORD}}
+          AWS_ACCESS_KEY_ID: ${{secrets.AWS_ACCESS_KEY_ID}}
+          AWS_SECRET_ACCESS_KEY: ${{secrets.AWS_SECRET_ACCESS_KEY}}
+          AWS_REGION: ${{secrets.AWS_REGION}}
