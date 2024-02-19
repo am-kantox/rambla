@@ -167,14 +167,14 @@ defmodule Rambla do
     @doc """
     Publishes the message to the destination synchronously, avoiding the pool.
     """
-    @doc deprecated: "Use configuration instead"
+    @doc deprecated: "Use configuration instead with `[count: 1]` option"
     defdelegate publish_synch(target, message), to: Rambla.ConnectionPool
 
     @doc """
     Publishes the message to the destination synchronously, avoiding the pool.
     Unlike `publish_synch/2`, allows to specify additional options per request.
     """
-    @doc deprecated: "Use configuration instead"
+    @doc deprecated: "Use configuration instead with `[count: 1]` option"
     defdelegate publish_synch(target, message, opts), to: Rambla.ConnectionPool
 
     @doc """
@@ -183,6 +183,7 @@ defmodule Rambla do
 
     The function would receive a pid of the connection process.
     """
+    @doc deprecated: "Use `publish(channels, FUNCTION, pid)` instead"
     defdelegate raw(target, f), to: Rambla.ConnectionPool
   end
 end
