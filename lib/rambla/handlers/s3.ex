@@ -73,8 +73,6 @@ if :s3 in Rambla.services() do
     def config, do: Application.get_env(:rambla, :s3)
 
     def do_handle_publish(false, connector, {bucket, path}, contents, opts) do
-      {connector, bucket, path, contents, opts}
-
       bucket
       |> ExAws.S3.put_object(path, contents)
       |> connector.request(opts)

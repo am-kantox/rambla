@@ -88,7 +88,7 @@ defmodule Rambla do
   def init(_opts) do
     @channels
     |> Map.values()
-    |> Enum.reduce(&Kernel.++/2)
+    |> Enum.reduce([], &Kernel.++/2)
     |> Enum.uniq()
     |> Enum.map(&handler_for_service/1)
     |> case do

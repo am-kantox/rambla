@@ -98,7 +98,7 @@ defmodule Rambla.Handler do
       defp do_pool_spec({_, []}, opts) do
         {connection, opts} = Keyword.pop(opts, :connection, %{})
         {options, opts} = Keyword.pop(opts, :options, [])
-        {retries, opts} = Keyword.pop(opts, :retries, [])
+        {retries, opts} = Keyword.pop(opts, :retries, Rambla.Handler.RetryState.max_retries())
 
         opts
         |> Keyword.update(:id, __MODULE__, &fqn_id/1)

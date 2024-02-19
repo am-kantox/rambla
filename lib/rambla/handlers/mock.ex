@@ -1,4 +1,6 @@
 if :mock in Rambla.services() do
+  Code.ensure_compiled!(Mox)
+
   defmodule Rambla.Handlers.Mock do
     @moduledoc """
     Default handler for _Mock_ testing doubles. 
