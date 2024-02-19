@@ -27,6 +27,9 @@ defmodule Test.Rambla do
     modern_s3 =
       start_supervised!({Rambla.Handlers.S3, [count: 2]})
 
+    modern_mock =
+      start_supervised!({Rambla.Handlers.Mock, [count: 2]})
+
     # v0.0
 
     opts = [
@@ -70,7 +73,8 @@ defmodule Test.Rambla do
       modern_redis: modern_redis,
       modern_httpc: modern_httpc,
       modern_smtp: modern_smtp,
-      modern_s3: modern_s3
+      modern_s3: modern_s3,
+      modern_mock: modern_mock
     }
   end
 
@@ -301,6 +305,19 @@ defmodule Test.Rambla do
     end)
 
     Rambla.Handlers.S3.publish(:chan_1, %{message: "file contents"}, self())
+    assert_receive {:transition, :success, _, _}, 1_000
+  end
+
+  test "modern use generic mocks" do
+    expect(Rambla.Mocks.Generic, :on_publish, fn name, message, opts ->
+      assert name == :chan_0
+      assert message == "file contents"
+      assert map_size(opts) == 0
+
+      {:ok, %{body: "file contents"}}
+    end)
+
+    Rambla.publish(:chan_0, %{message: "file contents"}, self())
     assert_receive {:transition, :success, _, _}, 1_000
   end
 

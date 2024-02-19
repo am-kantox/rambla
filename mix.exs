@@ -108,14 +108,15 @@ defmodule Rambla.MixProject do
       source_url: "https://github.com/am-kantox/#{@app}",
       canonical: "http://hexdocs.pm/#{@app}",
       logo: "stuff/logo-48x48.png",
-      extras: ["README.md", "stuff/getting-started.md"],
+      extras: ["README.md", "stuff/getting-started.md", "stuff/testing.md"],
       groups_for_modules: [
         Handlers: [
           Rambla.Handlers.Amqp,
           Rambla.Handlers.Redis,
           Rambla.Handlers.S3,
           Rambla.Handlers.Httpc,
-          Rambla.Handlers.Smtp
+          Rambla.Handlers.Smtp,
+          Rambla.Handlers.Mock
         ],
         Deprecated: [Rambla.Connection, Rambla.Connection.Config],
         "Deprecated Backends": [
