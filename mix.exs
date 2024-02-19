@@ -110,7 +110,21 @@ defmodule Rambla.MixProject do
       logo: "stuff/logo-48x48.png",
       extras: ["README.md", "stuff/getting-started.md"],
       groups_for_modules: [
-        Backends: [Rambla.Amqp, Rambla.Http, Rambla.Redis, Rambla.Smtp],
+        Handlers: [
+          Rambla.Handlers.Amqp,
+          Rambla.Handlers.Redis,
+          Rambla.Handlers.S3,
+          Rambla.Handlers.Httpc,
+          Rambla.Handlers.Smtp
+        ],
+        Deprecated: [Rambla.Connection, Rambla.Connection.Config],
+        "Deprecated Backends": [
+          Rambla.Amqp,
+          Rambla.Http,
+          Rambla.Redis,
+          Rambla.Smtp,
+          Rambla.Process
+        ],
         Expections: [Rambla.Exception]
       ]
     ]
