@@ -76,12 +76,12 @@ defmodule Rambla.MixProject do
       {:telemetria, "~> 0.4 or ~> 1.0", optional: true},
 
       # s3
-      {:ex_aws, "~> 2.1"},
-      {:ex_aws_s3, "~> 2.0"},
-      {:ex_aws_sts, "~> 2.0"},
-      {:hackney, "~> 1.9"},
-      {:sweet_xml, "~> 0.6"},
-      {:configparser_ex, "~> 4.0"},
+      {:ex_aws, "~> 2.1", optional: true},
+      {:ex_aws_s3, "~> 2.0", optional: true},
+      {:ex_aws_sts, "~> 2.0", optional: true},
+      {:hackney, "~> 1.9", optional: true},
+      {:sweet_xml, "~> 0.6", optional: true},
+      {:configparser_ex, "~> 4.0", optional: true},
 
       # dev, test
       {:mox, "~> 1.0", only: [:dev, :ci, :test]},

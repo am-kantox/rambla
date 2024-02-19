@@ -12,13 +12,14 @@ def deps do
 end
 ```
 
-## Supported back-ends
+## Supported backends
 
 - Rabbit (through [Amqp](https://hexdocs.pm/amqp/))
 - Redis (through [Redix](https://hexdocs.pm/redix))
 - Http (through [:httpc](http://erlang.org/doc/man/httpc.html))
 - Smtp (through [:gen_smtp](https://hexdocs.pm/gen_smtp))
-- Slack (through [Envío](https://hexdocs.pm/envio))
+- S3 (through [:ex_aws_s3](https://hexdocs.pm/ex_aws_s3))
+- Slack (through [Envío](https://hexdocs.pm/envio)) [pending]
 
 ## Coming soon
 

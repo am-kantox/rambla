@@ -24,6 +24,30 @@ defmodule Rambla do
   To start pools, simply embed `Rambla` into the supervision tree, it’d 
     start a supervisor with children for all the configured services.
 
+  The configuration of the service implies all the `Rambla`’s code for it will
+    be compiled, but the dependency itself must be added to the `deps` section
+    of the `Mix.Project` file.
+
+  The excerpt from the `Rambla.MixProject` itself follows
+
+  ```elixir
+    # optional backends
+    {:amqp, "~> 3.0", optional: true},
+    {:redix, "~> 1.0", optional: true},
+    {:gen_smtp, "~> 0.4 or ~> 1.0", optional: true},
+    {:telemetria, "~> 0.4 or ~> 1.0", optional: true},
+
+    # s3
+    {:ex_aws, "~> 2.1", optional: true},
+    {:ex_aws_s3, "~> 2.0", optional: true},
+    {:ex_aws_sts, "~> 2.0", optional: true},
+    {:hackney, "~> 1.9", optional: true},
+    {:sweet_xml, "~> 0.6", optional: true},
+    {:configparser_ex, "~> 4.0", optional: true},
+  ```
+
+  ---
+
   Channel names are used across connections to publish messages.
     `Rambla.publish(:channel_1, message)` would publish the message to all channels
     named `channel_1`.
@@ -39,7 +63,8 @@ defmodule Rambla do
   @doc "Returns a map `%{‹service› => [‹channels›]}`"
   def channels, do: @channels
   @doc "Returns a list of all the configured connections"
-  def services, do: @channels |> Map.values() |> Enum.reduce(&Kernel.++/2) |> Enum.uniq()
+  def services,
+    do: @channels |> Map.values() |> Enum.reduce([], &Kernel.++/2) |> Enum.uniq()
 
   @doc false
   def handler_for_service(name) do

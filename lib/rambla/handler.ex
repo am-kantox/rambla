@@ -273,7 +273,9 @@ defmodule Rambla.Handler do
 
       def extract_options(payload, %{connection: connection, options: options}) do
         payload_options =
-          is_map(payload) and Map.has_key?(payload, :message) and Map.delete(payload, :message)
+          if is_map(payload) and Map.has_key?(payload, :message),
+            do: Map.delete(payload, :message),
+            else: %{}
 
         connection_options =
           connection |> get_in([:params, :options]) |> Kernel.||([]) |> Map.new()

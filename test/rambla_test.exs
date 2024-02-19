@@ -34,13 +34,13 @@ defmodule Test.Rambla do
        [
          options: [size: 5, max_overflow: 300],
          type: :local,
-         params: Application.fetch_env!(:rambla, :amqp)
+         params: Application.fetch_env!(:rambla, :pools)[:amqp]
        ]},
       {{Rambla.Amqp, :other},
        [
          options: [size: 5, max_overflow: 100],
          type: :local,
-         params: Application.fetch_env!(:rambla, :amqp)
+         params: Application.fetch_env!(:rambla, :pools)[:amqp]
        ]},
       {Rambla.Redis, params: Application.fetch_env!(:rambla, :pools)[:redis]},
       {Rambla.Http, params: Application.fetch_env!(:rambla, :pools)[:http]},
