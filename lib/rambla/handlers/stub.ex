@@ -69,7 +69,7 @@ defmodule Rambla.Handlers.Stub do
     quote do
       require Logger
 
-      @stub_options unquote(Macro.escape(stub_options))
+      @stub_options unquote(Macro.expand(stub_options, __CALLER__))
 
       @behaviour Rambla.Handlers.Stub
       def on_publish(name, message, options) do
