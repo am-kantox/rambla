@@ -27,6 +27,7 @@ end
 
 ## Changelog
 
+- **`1.1.4`** `use Rambla.Handlers.Stub`
 - **`1.1.3`** `Rambla.Handlers.Stub`
 - **`1.1.1`** `Rambla.Handlers.Mock`
 - **`1.1.0`** Complete rewrite, all the services are now controlled by `Finitomata.Pool`

@@ -19,6 +19,21 @@ defmodule Rambla.Handlers.Stub do
   Rambla.Handlers.Stub.publish(:chan_0, %{message: %{foo: 42}, serializer: Jason})
   Rambla.publish(:chan_0, %{message: %{foo: 42}, serializer: Jason})
   ```
+
+  ## Stub modules
+
+  To implement the custom `Stub`, returning any value, or like, use
+
+  ```elixir
+  defmodule ConnStub do
+    use Rambla.Handlers.Stub, %{token: "FOOBAR"}
+
+    @behaviour Rambla.Handlers.Stub
+    def on_publish(_name, _message, _options) do
+      {:ok, @stub_options}
+    end
+  end
+  ```
   """
 
   use Rambla.Handler
@@ -47,5 +62,25 @@ defmodule Rambla.Handlers.Stub do
 
   def do_handle_publish(stub, name, message, options) do
     stub.on_publish(name, message, options)
+  end
+
+  @doc false
+  defmacro __using__(stub_options \\ []) do
+    quote do
+      @stub_options unquote(Macro.escape(stub_options))
+
+      @behaviour Rambla.Handlers.Stub
+
+      @behaviour Rambla.Handlers.Stub
+      def on_publish(name, message, options) do
+        Logger.info(
+          "[🖇️] STUBBED CALL [#{name}] with " <> inspect(message: message, options: options)
+        )
+
+        {:ok, @stub_options}
+      end
+
+      defoverridable on_publish: 3
+    end
   end
 end
