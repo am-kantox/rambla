@@ -55,6 +55,9 @@ if :s3 in Rambla.services() do
 
       {connector, options} = Map.pop(options, :connector, ExAws)
 
+      {preferred_format, options} = Map.pop(options, :preferred_format, :binary)
+      message = converter(preferred_format, message)
+
       do_handle_publish(File.exists?(message), connector, {bucket, path}, message, options)
     end
 

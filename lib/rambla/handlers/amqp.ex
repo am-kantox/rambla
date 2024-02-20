@@ -17,6 +17,16 @@ if :amqp in Rambla.services() do
 
     Rambla.Handlers.Amqp.publish(:chan_1, %{message: %{foo: 42}, exchange: "rambla"})
     ```
+
+    ---
+
+    ### Known Options
+
+    - `:exchange` (default: `""`)
+    - `:declare?` (default: false)
+    - `:routing_key`, (default: `""`)
+    - `:channel_provider` (default: `AMQP.Application`)
+    - `:channel_publisher` (default: `AMQP.Basic`)
     """
 
     use Rambla.Handler
@@ -34,6 +44,9 @@ if :amqp in Rambla.services() do
       {routing_key, options} = Map.pop(options, :routing_key, "")
       {channel_provider, options} = Map.pop(options, :channel_provider, AMQP.Application)
       {channel_publisher, options} = Map.pop(options, :channel_publisher, AMQP.Basic)
+
+      {preferred_format, options} = Map.pop(options, :preferred_format, :map)
+      message = converter(preferred_format, message)
 
       with {:ok, json} <- Jason.encode(message),
            {:ok, chan} <- channel_provider.get_channel(name),

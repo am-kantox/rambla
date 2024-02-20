@@ -282,6 +282,24 @@ defmodule Rambla.Handler do
 
       defoverridable extract_options: 2
 
+      @doc false
+      @spec converter(:none | :map | :binary, any()) :: any()
+      defp converter(:map, value) when is_binary(value) do
+        case Jason.decode(value) do
+          {:ok, map} when is_map(map) -> map
+          _ -> value
+        end
+      end
+
+      defp converter(:binary, value) when is_map(value) do
+        case Jason.encode(value) do
+          {:ok, binary} when is_binary(binary) -> binary
+          _ -> value
+        end
+      end
+
+      defp converter(_, value), do: value
+
       @doc """
       An interface to publish messages using the FSM pool.
 

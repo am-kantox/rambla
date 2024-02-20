@@ -30,9 +30,10 @@ if :redis in Rambla.services() do
         ) do
       options = extract_options(payload, state)
 
+      {preferred_format, options} = Map.pop(options, :preferred_format, :map)
       {serializer, _options} = Map.pop(options, :serializer, Jason)
 
-      for {k, v} <- message do
+      for {k, v} <- converter(preferred_format, message) do
         value =
           case serializer.encode(v) do
             {:ok, json} -> json

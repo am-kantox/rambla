@@ -27,6 +27,7 @@ end
 
 ## Changelog
 
+- **`1.1.5`** `preferred_format: :map | :binary | :none`
 - **`1.1.4`** `use Rambla.Handlers.Stub`
 - **`1.1.3`** `Rambla.Handlers.Stub`
 - **`1.1.1`** `Rambla.Handlers.Mock`

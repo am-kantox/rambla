@@ -33,7 +33,10 @@ if :httpc in Rambla.services() do
       conn = config() |> get_in([:channels, name, :connection])
       uri = struct!(URI, get_in(config(), [:connections, conn]))
 
+      {preferred_format, options} = Map.pop(options, :preferred_format, :none)
       {serializer, _options} = Map.pop(options, :serializer, Jason)
+
+      message = converter(preferred_format, message)
 
       body =
         case serializer.encode(message) do

@@ -34,7 +34,11 @@ if :mock in Rambla.services() do
     @doc false
     def handle_publish(%{message: message} = payload, %{connection: %{channel: name}} = state) do
       options = extract_options(payload, state)
+
       {mock, options} = Map.pop(options, :mock, Rambla.Mocks.Generic)
+      {preferred_format, options} = Map.pop(options, :preferred_format, :none)
+      message = converter(preferred_format, message)
+
       do_handle_publish(mock, name, message, options)
     end
 

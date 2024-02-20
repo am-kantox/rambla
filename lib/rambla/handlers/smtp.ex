@@ -59,7 +59,10 @@ if :smtp in Rambla.services() do
       conn = config() |> get_in([:channels, name, :connection])
       params = get_in(config(), [:connections, conn])
 
+      {preferred_format, options} = Map.pop(options, :preferred_format, :binary)
       {generator, _options} = Map.pop(options, :generator, nil)
+
+      message = converter(preferred_format, message)
 
       message =
         if is_nil(generator) do
