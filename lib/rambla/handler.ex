@@ -76,10 +76,11 @@ defmodule Rambla.Handler do
     # credo:disable-for-next-line Credo.Check.Refactor.LongQuoteBlocks
     quote location: :keep, generated: true do
       require Logger
+      alias Rambla.Handler.RetryState
 
       @behaviour Finitomata.Pool.Actor
 
-      defstruct connection: %{}, options: %{}, retries: Rambla.Handler.RetryState.max_retries()
+      defstruct connection: %{}, options: %{}, retries: RetryState.max_retries()
 
       @doc false
       defp fqn_id(nil), do: __MODULE__
@@ -98,7 +99,7 @@ defmodule Rambla.Handler do
       defp do_pool_spec({_, []}, opts) do
         {connection, opts} = Keyword.pop(opts, :connection, %{})
         {options, opts} = Keyword.pop(opts, :options, [])
-        {retries, opts} = Keyword.pop(opts, :retries, Rambla.Handler.RetryState.max_retries())
+        {retries, opts} = Keyword.pop(opts, :retries, RetryState.max_retries())
 
         opts
         |> Keyword.update(:id, __MODULE__, &fqn_id/1)
@@ -156,7 +157,7 @@ defmodule Rambla.Handler do
           {count, conn_opts} = Keyword.pop(conn_opts, :count)
 
           {retries, conn_opts} =
-            Keyword.pop(conn_opts, :retries, Rambla.Handler.RetryState.max_retries())
+            Keyword.pop(conn_opts, :retries, RetryState.max_retries())
 
           count
           |> is_nil()
@@ -260,13 +261,9 @@ defmodule Rambla.Handler do
       def on_error(%{payload: payload, message: message} = error, id) do
         Logger.warning("[🖇️] #{__MODULE__}[#{id}] → ✗ " <> inspect(message))
 
-        retries = Map.get(error, :retries, Rambla.Handler.RetryState.max_retries())
+        retries = Map.get(error, :retries, RetryState.max_retries())
 
-        Finitomata.Pool.run(
-          id,
-          %Rambla.Handler.RetryState{payload: payload, retries: retries - 1},
-          nil
-        )
+        Finitomata.Pool.run(id, %RetryState{payload: payload, retries: retries - 1}, nil)
       end
 
       defoverridable on_result: 2, on_error: 2

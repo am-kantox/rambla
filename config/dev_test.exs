@@ -30,8 +30,12 @@ config :ex_aws,
 
 config :rambla,
   mock: [
-    connections: [mocked: :conn],
+    connections: [mocked: :conn_mocked],
     channels: [chan_0: [connection: :mocked]]
+  ],
+  stub: [
+    connections: [stubbed: :conn_stubbed],
+    channels: [chan_stub: [connection: :stubbed]]
   ],
   redis: [
     connections: [

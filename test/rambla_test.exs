@@ -30,6 +30,9 @@ defmodule Test.Rambla do
     modern_mock =
       start_supervised!({Rambla.Handlers.Mock, [count: 2]})
 
+    modern_stub =
+      start_supervised!({Rambla.Handlers.Stub, [count: 2]})
+
     # v0.0
 
     opts = [
@@ -74,7 +77,8 @@ defmodule Test.Rambla do
       modern_httpc: modern_httpc,
       modern_smtp: modern_smtp,
       modern_s3: modern_s3,
-      modern_mock: modern_mock
+      modern_mock: modern_mock,
+      modern_stub: modern_stub
     }
   end
 
@@ -318,6 +322,11 @@ defmodule Test.Rambla do
     end)
 
     Rambla.publish(:chan_0, %{message: "file contents"}, self())
+    assert_receive {:transition, :success, _, _}, 1_000
+  end
+
+  test "modern use generic stubs" do
+    Rambla.publish(:chan_stub, %{message: "file contents"}, self())
     assert_receive {:transition, :success, _, _}, 1_000
   end
 

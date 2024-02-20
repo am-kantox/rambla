@@ -17,9 +17,11 @@ if :mock in Rambla.services() do
       channels: [chan_0: [connection: :mocked]]
     ]
 
-    # Then you can access the connection/channel via `Rambla.Handlers.Amqp` as
+    # Then you can access the connection/channel explicitly via `Rambla.Handlers.Mock`
+    #   or implicitly via `Rambla` as
 
-    Rambla.Handlers.Mock.publish(:chan_1, %{message: %{foo: 42}, serializer: Jason})
+    Rambla.publish(:chan_0, %{message: %{foo: 42}, serializer: Jason})
+    Rambla.Handlers.Mock.publish(:chan_0, %{message: %{foo: 42}, serializer: Jason})
     ```
     """
 
