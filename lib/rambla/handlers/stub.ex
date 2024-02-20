@@ -67,6 +67,8 @@ defmodule Rambla.Handlers.Stub do
   @doc false
   defmacro __using__(stub_options \\ []) do
     quote do
+      require Logger
+
       @stub_options unquote(Macro.escape(stub_options))
 
       @behaviour Rambla.Handlers.Stub
