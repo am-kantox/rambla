@@ -70,8 +70,6 @@ defmodule Rambla.Handlers.Stub do
       @stub_options unquote(Macro.escape(stub_options))
 
       @behaviour Rambla.Handlers.Stub
-
-      @behaviour Rambla.Handlers.Stub
       def on_publish(name, message, options) do
         Logger.info(
           "[🖇️] STUBBED CALL [#{name}] with " <> inspect(message: message, options: options)
