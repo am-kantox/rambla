@@ -38,7 +38,8 @@ defmodule Rambla.Handlers.Stub do
 
   use Rambla.Handler
 
-  @callback on_publish(name :: atom(), message :: any(), options :: map()) :: :ok
+  @callback on_publish(name :: atom(), message :: any(), options :: map()) ::
+              Rambla.Handler.resolution()
 
   @impl Rambla.Handler
   @doc false
