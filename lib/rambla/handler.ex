@@ -8,11 +8,11 @@ defmodule Rambla.Handler do
   > do the following things for your module:
   >
   > - implement `@behaviour Finitomata.Pool.Actor` where `actor/2` will
-  >   delegate to `handle_publish/2` expected to be implemented by this module,
+  >   delegate to `handle_publish/3` expected to be implemented by this module,
   >   and overridable `on_result/2` and `on_error/2` will have a reasonable
   >   default implementation (debug for the former and warn and retry for the latter)
   > - set `@behaviour Rambla.Handler` to invite you to implement real publishing
-  >   handler as `handle_publish/2`
+  >   handler as `handle_publish/3`
 
   ### Example
 
@@ -33,31 +33,52 @@ defmodule Rambla.Handler do
     end
 
     @impl Rambla.Handler
-    def handle_publish(payload, %{connection: conn} = state) do
-      SomeImpl.publish(conn, payload, state.options)
+    def handle_publish(payload, options, %{connection: conn} = state) do
+      SomeImpl.publish(conn, payload, options)
     end 
   end
   ```
   """
 
-  @typedoc "Callback resolution"
+  @typedoc "The connection name"
+  @type connection_name :: atom()
+  @typedoc "The channel name"
+  @type channel_name :: atom()
+  @typedoc "The allowed callback resolution"
   @type resolution :: :ok | :error | {:ok, term()} | {:error, any()}
+  @typedoc "The callback function to be passed to `Rambla.publish/3`"
+  @type callback ::
+          ([{:source, module()} | {:destination, term()} | {:options, map()}] -> resolution())
 
   @doc "The callback to be implemented by the consumer of this code"
   @callback handle_publish(
-              (pid() -> resolution()) | %{message: term()} | term(),
-              Finitomata.State.payload()
+              payload :: callback() | %{message: term()} | term(),
+              options :: map(),
+              state :: Finitomata.State.payload()
             ) :: resolution()
 
   @doc "The callback to get to the configuration"
-  @callback config :: [{:connections, keyword()} | {:channels, keyword()}]
+  @callback config :: [
+              {:connections, [{connection_name(), keyword() | binary()}]}
+              | {:channels,
+                 [{channel_name(), [{:connection, connection_name()} | {:options, keyword()}]}]}
+            ]
 
   @doc "The callback to be called when retries exhausted"
-  @callback on_fatal(Finitomata.id(), %{
-              required(:payload) => any(),
-              required(:message) => String.t(),
-              retries: non_neg_integer()
-            }) :: :ok
+  @callback on_fatal(
+              Finitomata.id(),
+              {nil
+               | (any() ->
+                    :ok
+                    | :retry
+                    | {:retry,
+                       %{optional(:retries) => non_neg_integer(), optional(:pid) => pid()}}),
+               %{
+                 required(:payload) => any(),
+                 required(:message) => String.t(),
+                 retries: non_neg_integer()
+               }}
+            ) :: :ok
 
   @doc "If specified, these services will be started before pools under `:rest_for_one`"
   @callback external_servers(Finitomata.Pool.id()) :: [
@@ -220,53 +241,75 @@ defmodule Rambla.Handler do
       end
 
       def actor(payload, state) do
+        options = extract_options(payload, state)
+
         {retries, payload} =
           if is_map(payload),
             do: Map.pop(payload, :retries, state.retries),
             else: {state.retries, payload}
 
-        case handle_publish(payload, state) do
+        on_result = get_in(options, [:callbacks, :on_success])
+        on_error = get_in(options, [:callbacks, :on_failure])
+
+        case handle_publish(payload, options, state) do
           {:ok, result} ->
-            {:ok, result}
+            {:ok, {on_result, result}}
 
           :ok ->
-            {:ok, payload}
+            {:ok, {on_result, payload}}
 
           {:error, message} ->
-            {:error, %{payload: payload, message: message, retries: retries}}
+            {:error, {on_error, %{payload: payload, message: message, retries: retries}}}
 
           :error ->
             {:error,
-             %{
-               payload: payload,
-               message: "Error publishing message: ‹#{inspect(payload)}›",
-               retries: retries
-             }}
+             {on_error,
+              %{
+                payload: payload,
+                message: "Error publishing message: ‹#{inspect(payload)}›",
+                retries: retries
+              }}}
 
           result ->
-            {:ok, result}
+            {:ok, {on_result, result}}
         end
       end
 
       @impl Finitomata.Pool.Actor
-      def on_result(result, id) do
+      def on_result({callback, result}, id) when is_function(callback, 1) do
+        with response when response != :ok <-
+               callback.(%{id: id, outcome: result, resolution: :success}),
+             do: IO.warn("`on_success/1` callback must return `:ok`")
+      end
+
+      def on_result({nil, result}, id) do
         Logger.debug("[🖇️] #{__MODULE__}[#{id}] → ✓ " <> inspect(result))
       end
 
       @impl Finitomata.Pool.Actor
-      def on_error(%{retries: retries} = error, id) when retries <= 0 do
-        on_fatal(id, error)
+      def on_error({callback, %{retries: retries} = error}, id) when retries <= 0 do
+        on_fatal(id, {callback, error})
       end
 
-      def on_error(%{payload: payload, message: message} = error, id) do
+      def on_error({callback, error}, id) when is_function(callback, 1) do
+        response = callback.(%{id: id, outcome: error, resolution: :error})
+
+        case response do
+          :ok -> :ok
+          :retry -> on_error({nil, error}, id)
+          {:retry, opts} -> on_error({nil, Map.merge(error, opts)}, id)
+          _ -> IO.warn("`on_failure/1` callback must return `:ok | :retry | {:retry, options}`")
+        end
+      end
+
+      def on_error({nil, %{payload: payload, message: message} = error}, id) do
         Logger.warning("[🖇️] #{__MODULE__}[#{id}] → ✗ " <> inspect(message))
 
         retries = Map.get(error, :retries, RetryState.max_retries())
+        pid = Map.get(error, :pid, nil)
 
-        Finitomata.Pool.run(id, %RetryState{payload: payload, retries: retries - 1}, nil)
+        Finitomata.Pool.run(id, %RetryState{payload: payload, retries: retries - 1}, pid)
       end
-
-      defoverridable on_result: 2, on_error: 2
 
       def extract_options(payload, %{connection: connection, options: options}) do
         payload_options =
@@ -331,8 +374,19 @@ defmodule Rambla.Handler do
       def external_servers(_id), do: []
 
       @impl Rambla.Handler
-      def on_fatal(id, error) do
+      def on_fatal(id, {nil, error}) do
         Logger.error("[🖇️] #{__MODULE__}[#{id}] → ✗✗ " <> inspect(error))
+      end
+
+      def on_fatal(id, {callback, error}) when is_function(callback, 1) do
+        response = callback.(%{id: id, outcome: error, resolution: :fatal})
+
+        case response do
+          :ok -> :ok
+          :retry -> on_error({nil, Map.put(error, :retries, RetryState.max_retries())}, id)
+          {:retry, opts} -> on_error({nil, Map.merge(error, opts)}, id)
+          _ -> IO.warn("`on_failure/1` callback must return `:ok | :retry | {:retry, options}`")
+        end
       end
 
       defoverridable external_servers: 1, on_fatal: 2

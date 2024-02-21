@@ -50,12 +50,7 @@ if :smtp in Rambla.services() do
 
     @impl Rambla.Handler
     @doc false
-    def handle_publish(
-          %{message: message} = payload,
-          %{connection: %{channel: name}} = state
-        ) do
-      options = extract_options(payload, state)
-
+    def handle_publish(%{message: message}, options, %{connection: %{channel: name}}) do
       conn = config() |> get_in([:channels, name, :connection])
       params = get_in(config(), [:connections, conn])
 
@@ -74,15 +69,16 @@ if :smtp in Rambla.services() do
       do_handle_publish(params, message, options)
     end
 
-    def handle_publish(callback, %{connection: %{channel: name}, options: _options})
+    def handle_publish(callback, options, %{connection: %{channel: name}})
         when is_function(callback, 1) do
       conn = config() |> get_in([:channels, name, :connection])
       params = get_in(config(), [:connections, conn])
 
-      callback.(params)
+      callback.(source: __MODULE__, destination: params, options: options)
     end
 
-    def handle_publish(payload, state), do: handle_publish(%{message: payload}, state)
+    def handle_publish(payload, options, state),
+      do: handle_publish(%{message: payload}, options, state)
 
     @impl Rambla.Handler
     @doc false

@@ -281,10 +281,10 @@ defmodule Test.Rambla do
 
   test "modern works with httpc" do
     Rambla.Handlers.Httpc.publish(:chan_1, %{foo: 42}, self())
-    assert_receive {:transition, :success, _, _}, 1_000
+    assert_receive {:transition, :success, _, _}, 3_000
 
     Rambla.Handlers.Httpc.publish(:chan_2, %{foo: 42}, self())
-    assert_receive {:transition, :failure, _, _}, 1_000
+    assert_receive {:transition, :failure, _, _}, 3_000
   end
 
   @tag :skip

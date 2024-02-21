@@ -43,20 +43,19 @@ defmodule Rambla.Handlers.Stub do
 
   @impl Rambla.Handler
   @doc false
-  def handle_publish(%{message: message} = payload, %{connection: %{channel: name}} = state) do
-    options = extract_options(payload, state)
+  def handle_publish(%{message: message}, options, %{connection: %{channel: name}}) do
     {preferred_format, options} = Map.pop(options, :preferred_format, :binary)
     {stub, options} = Map.pop(options, :stub, Rambla.Mocks.Stub)
     do_handle_publish(stub, name, converter(preferred_format, message), options)
   end
 
-  def handle_publish(callback, %{connection: %{channel: name}} = state)
+  def handle_publish(callback, options, %{connection: %{channel: name}})
       when is_function(callback, 1) do
-    options = extract_options(%{}, state)
-    callback.({name, options})
+    callback.(source: __MODULE__, destination: name, options: options)
   end
 
-  def handle_publish(payload, state), do: handle_publish(%{message: payload}, state)
+  def handle_publish(payload, options, state),
+    do: handle_publish(%{message: payload}, options, state)
 
   @impl Rambla.Handler
   @doc false

@@ -96,7 +96,10 @@ config :rambla,
     channels: [
       chan_1: [
         connection: :bucket_1,
-        options: [connector: Rambla.Mocks.ExAws]
+        options: [
+          connector: Rambla.Mocks.ExAws,
+          callbacks: [on_success: fn result -> IO.inspect(result, label: "on_success") && :ok end]
+        ]
       ]
     ],
     handler: Rambla.Handlers.S3

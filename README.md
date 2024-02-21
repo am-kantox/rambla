@@ -27,6 +27,7 @@ end
 
 ## Changelog
 
+- **`1.2.0`** allow `on_success/1` and `on_failure/1` callbacks to better control the execution 
 - **`1.1.5`** `preferred_format: :map | :binary | :none`
 - **`1.1.4`** `use Rambla.Handlers.Stub`
 - **`1.1.3`** `Rambla.Handlers.Stub`

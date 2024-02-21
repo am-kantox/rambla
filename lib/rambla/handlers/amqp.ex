@@ -33,12 +33,7 @@ if :amqp in Rambla.services() do
 
     @impl Rambla.Handler
     @doc false
-    def handle_publish(
-          %{message: message} = payload,
-          %{connection: %{channel: name}} = state
-        ) do
-      options = extract_options(payload, state)
-
+    def handle_publish(%{message: message}, options, %{connection: %{channel: name}}) do
       {exchange, options} = Map.pop(options, :exchange, "")
       {declare?, options} = Map.pop(options, :declare?, false)
       {routing_key, options} = Map.pop(options, :routing_key, "")
@@ -54,16 +49,16 @@ if :amqp in Rambla.services() do
            do: channel_publisher.publish(chan, exchange, routing_key, json, Map.to_list(options))
     end
 
-    def handle_publish(callback, %{connection: %{channel: name}} = state)
+    def handle_publish(callback, options, %{connection: %{channel: name}})
         when is_function(callback, 1) do
-      options = extract_options(%{}, state)
       channel_provider = Map.get(options, :channel_provider, AMQP.Application)
 
       with {:ok, chan} <- channel_provider.get_channel(name),
-           do: callback.(chan)
+           do: callback.(source: __MODULE__, destination: chan, options: options)
     end
 
-    def handle_publish(payload, state), do: handle_publish(%{message: payload}, state)
+    def handle_publish(payload, options, state),
+      do: handle_publish(%{message: payload}, options, state)
 
     @impl Rambla.Handler
     @doc false

@@ -2,71 +2,69 @@
 
 ## Intro
 
-`Rambla` provides the ability to publish messages to several different destinations. Destinations are supported via backends. The respective backend must be explicitly included into the list of extra applications of _target application_.
+`Rambla` provides the ability to publish messages to several different destinations. Destinations are supported via handlers. The respective handler must be explicitly included into the list of extra applications of _target application_.
 
-For each of the configured destinations, the pool of workers to talk to it is maintained. Each destination should be configured separately; the preferred way would be to use `config.exs` for local development and `releases.exs` for releases.
+For each of the configured destinations, the pool of workers based on `Finitomata.Pool` is maintained. Each destination should be configured separately; the preferred way would be to use `config.exs` because the handlers themselves are included in the release based on this config. Additional configuration might be passed to the `Rambla.start_link/1` call.
 
 ## Configuration
 
-The configuration is the keyword list with keys specifying backends and values—their initialization properties. Properties contain [_pool options_](https://github.com/devinus/poolboy/blob/master/README.md), _name_ and [_type_](https://hexdocs.pm/elixir/GenServer.html?#module-name-registration) of the worker, and _parameters_ to be passed as is to the underlying backend engine.
+The configuration is the keyword list with keys specifying handlers and their initialization properties. All the configs are based on the pattern provided by [`:amqp`](https://hexdocs.pm/amqp/AMQP.Application.html#get_channel/1-usage) application. 
 
 ## Starting Pools
 
-Upon target application start, [`Rambla.start_pools/0`](https://hexdocs.pm/rambla/Rambla.html#start_pools/0) function should be called to start pools. If providing a configuration through the file is not an option, it might be passed as is to the call to [`Rambla.start_pools/1`](https://hexdocs.pm/rambla/Rambla.html#start_pools/1). In this case, the static configuration from config files would be discarded.
+Embed `Rambla` into your supervision tree. The _configured_ handlers will be started supervised.
 
 ## Configuration Example
 
-Most parameters in the options have reasonable default values `:local` for `:type` and backend module name for worker name. Here is the full example, with all the backend on, and options set.
+`Rambla.Handlers.Amqp` requires `:amqp` application to be configured and started, ditto for `Rambla.Handlers.S3`. Everything else is to be configured as shown below.
 
 ```elixir
-config :rambla, :pools,
+config :rambla,
   redis: [
-    params: [
-      host: System.get_env("REDIS_HOST", "127.0.0.1"),
-      port: String.to_integer(System.get_env("REDIS_PORT", "6379")),
-      password: System.get_env("REDIS_PASSWORD", ""),
-      database: 0
+    connections: [
+      local_conn: [
+        host: System.get_env("REDIS_HOST", "127.0.0.1"),
+        port: String.to_integer(System.get_env("REDIS_PORT", "6379")),
+        password: System.get_env("REDIS_PASSWORD", ""),
+        database: 0
+      ]
+    ],
+    channels: [chan_1: [connection: :local_conn]]
+  ],
+  httpc: [
+    connections: [
+      httpbin_success: [scheme: "https", host: "httpbin.org", path: "/post"],
+      httpbin_error: [scheme: "https", host: "httpbin.org", path: "/status/500"]
+    ],
+    channels: [
+      chan_1: [connection: :httpbin_success, options: [headers: [{"accept", "application/json"}]]],
+      chan_2: [connection: :httpbin_error, options: [headers: [{"accept", "text/plain"}]]]
     ]
   ],
-  amqp: [
-    options: [size: 5, max_overflow: 300],
-    params: [
-      host: System.get_env("RABBITMQ_HOST", "127.0.0.1"),
-      port: String.to_integer(System.get_env("RABBITMQ_PORT", "5672")),
-      username: System.get_env("RABBITMQ_USERNAME", "guest"),
-      password: System.get_env("RABBITMQ_PASSWORD", "guest")
-      virtual_host: System.get_env("RABBITMQ_VHOST", "/"),
-      x_message_ttl: "4000"
-    ]
-  ],
-  http: [
-    options: [size: 25],
-    params: [
-      host: System.get_env("RAMBLA_HTTP_HOST", "127.0.0.1"),
-      port: String.to_integer(System.get_env("RAMBLA_HTTP_PORT", "80"))
-    ]
-  ],
-  smtp: [
-    options: [max_overflow: 10],
-    params: [
-      relay: System.get_env("RAMBLA_SMTP_RELAY", "smtp.gmail.com"),
-      username: System.get_env("RAMBLA_SMTP_USERNAME"),
-      password: System.get_env("RAMBLA_SMTP_PASSWORD"),
-      auth: :always,
-      ssl: true,
-      hostname: System.get_env("RAMBLA_SMTP_HOSTNAME"),
-      retries: 3,
-      from: %{"Aleksei Matiushkin" => "aleksei@example.com"}
-    ]
-  ]
 ```
 
 ## Publishing
 
-Publishing to the destination is as easy, as calling [`Rambla.html#publish/3`](https://hexdocs.pm/rambla/Rambla.html#publish/3) passing the destination (e. g. `Rambla.Amqp`,) message and optional configuration parameters.
+Publishing to the destination is as easy, as calling [`Rambla.html#publish/3`](https://hexdocs.pm/rambla/Rambla.html#publish/3) passing the destination channel, the message and optional configuration parameters. The message will be published to all the configured handlers for this channel.
 
-The following would publish the message to previously configured `AMQP` connection:
+The following would publish the message to previously configured `:channel_1` channel.
 
 ```elixir
-Rambla.publish(Rambla.Amqp, %{foo: 42, bar: :baz}, exchange: "barfoo")
+Rambla.publish(:channel_1, %{message: %{foo: 42, bar: :baz}, exchange: "barfoo"})
+```
+
+## Testing
+
+In `:test` environment, use `Rambla.Handlers.Mock` and `Rambla.Handlers.Stub` handlers to substitute actual destinations for the channels and additionally use `Mox` expectations with `Mock` handler to test the publishing.
+
+```elixir
+config :rambla,
+  mock: [
+    connections: [mocked: :conn_mocked],
+    channels: [chan_1: [connection: :mocked]]
+  ],
+  stub: [
+    connections: [stubbed: :conn_stubbed],
+    channels: [chan_2: [connection: :stubbed]]
+  ]
 ```

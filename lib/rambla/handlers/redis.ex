@@ -24,12 +24,7 @@ if :redis in Rambla.services() do
 
     @impl Rambla.Handler
     @doc false
-    def handle_publish(
-          %{message: message} = payload,
-          %{connection: %{channel: name}} = state
-        ) do
-      options = extract_options(payload, state)
-
+    def handle_publish(%{message: message}, options, %{connection: %{channel: name}}) do
       {preferred_format, options} = Map.pop(options, :preferred_format, :map)
       {serializer, _options} = Map.pop(options, :serializer, Jason)
 
@@ -44,12 +39,13 @@ if :redis in Rambla.services() do
       end
     end
 
-    def handle_publish(callback, %{connection: %{channel: name}, options: _options})
+    def handle_publish(callback, options, %{connection: %{channel: name}})
         when is_function(callback, 1) do
-      callback.(name)
+      callback.(source: __MODULE__, destination: name, options: options)
     end
 
-    def handle_publish(payload, state), do: handle_publish(%{message: payload}, state)
+    def handle_publish(payload, options, state),
+      do: handle_publish(%{message: payload}, options, state)
 
     @impl Rambla.Handler
     @doc false

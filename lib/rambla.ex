@@ -21,6 +21,23 @@ defmodule Rambla do
   ]
   ```
 
+  Additional option, one might pass to the channel config, would be explicit handlers
+    for failures and success calls (by default the former prints the warning and retries
+    until the maximum count of retries reached, and then calls `on_fatal/2` callback, 
+    and the latter logs a debug message.)
+
+  ```elixir
+    channels: [
+      chan_1: [
+        connection: :conn_1,
+        options: [
+          callbacks: [
+            on_success: fn result -> IO.inspect(result, label: "on_success") && :ok end]
+          ]]]]
+  ```
+
+  ---
+
   To start pools, simply embed `Rambla` into the supervision tree, it’d 
     start a supervisor with children for all the configured services.
 
