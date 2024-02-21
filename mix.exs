@@ -115,8 +115,11 @@ defmodule Rambla.MixProject do
           Rambla.Handlers.Redis,
           Rambla.Handlers.S3,
           Rambla.Handlers.Httpc,
-          Rambla.Handlers.Smtp,
-          Rambla.Handlers.Mock
+          Rambla.Handlers.Smtp
+        ],
+        "Test/Dev Handlers": [
+          Rambla.Handlers.Mock,
+          Rambla.Handlers.Stub
         ],
         Deprecated: [Rambla.Connection, Rambla.Connection.Config],
         "Deprecated Backends": [
