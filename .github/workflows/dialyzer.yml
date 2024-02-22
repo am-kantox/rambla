@@ -23,8 +23,8 @@ jobs:
         with:
           otp-version: ${{matrix.pair.otp}}
           elixir-version: ${{matrix.pair.elixir}}
-      - run: |
-          epmd -daemon
+      - name: "Run quality tests"
+        run: |
           mix deps.unlock --all
           mix deps.get
           mix quality.ci
