@@ -22,7 +22,22 @@ defmodule Rambla.MixProject do
       dialyzer: [
         plt_file: {:no_warn, ".dialyzer/plts/dialyzer.plt"},
         plt_add_deps: :app_tree,
-        plt_add_apps: [:amqp, :redix, :inets, :ssl, :mix],
+        plt_add_apps: [
+          :amqp,
+          :redix,
+          :inets,
+          :ssl,
+          :mix,
+          :ex_aws,
+          :ex_aws_s3,
+          :finitomata,
+          :jason,
+          :logger,
+          :plug,
+          :mox,
+          :gen_smtp,
+          :poolboy
+        ],
         list_unused_filters: true,
         ignore_warnings: ".dialyzer/ignore.exs"
       ]
