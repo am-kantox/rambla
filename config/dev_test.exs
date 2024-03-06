@@ -90,7 +90,8 @@ config :rambla,
     channels: [chan_3: [connection: :gmail, options: [retries: 3]]]
   ],
   clickhouse: [
-    connections: [conn: "https://user:password@localhost:8123/some_database"],
+    # connections: [conn: "https://user:password@localhost:8123/some_database"],
+    connections: [conn: "http://default:password@localhost:8123/default"],
     channels: [chan: [connection: :conn]]
   ],
   s3: [

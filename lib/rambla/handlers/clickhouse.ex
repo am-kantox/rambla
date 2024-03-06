@@ -7,7 +7,7 @@ if :clickhouse in Rambla.services() do
     ```elixir
     config :rambla, :clickhouse,
       connections: [
-        conn_1: "http://user:password@host-master-1:8123/database"
+        conn_1: "http://default:password@host-master-1:8123/database"
       ],
       channels: [
         chan_1: [connection: :conn_1]
@@ -16,6 +16,21 @@ if :clickhouse in Rambla.services() do
     # Then you can access the connection/channel via `Rambla.Handlers.Clickhouse` as
 
     Rambla.Handlers.Clickhouse.publish(:chan_1, %{message: %{foo: 42}, table: :events, serializer: Jason})
+    ```
+
+    ---
+
+    To install `Clickhouse`, visit https://clickhouse.com/docs/en/getting-started
+
+    ```sql
+    CREATE TABLE events
+    (
+      source_id UInt32,
+      timestamp DateTime,
+      message String
+    )
+    ENGINE = MergeTree
+    PRIMARY KEY (source_id, timestamp)
     ```
     """
 
