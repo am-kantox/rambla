@@ -89,6 +89,10 @@ config :rambla,
     ],
     channels: [chan_3: [connection: :gmail, options: [retries: 3]]]
   ],
+  clickhouse: [
+    connections: [conn: "https://user:password@localhost:8123/some_database"],
+    channels: [chan: [connection: :conn]]
+  ],
   s3: [
     connections: [
       bucket_1: [bucket: "test-bucket", path: "some/path"]
@@ -98,7 +102,7 @@ config :rambla,
         connection: :bucket_1,
         options: [
           connector: Rambla.Mocks.ExAws,
-          callbacks: [on_success: fn result -> IO.inspect(result, label: "on_success") && :ok end]
+          callbacks: [on_success: &Rambla.do_inspect/1]
         ]
       ]
     ],

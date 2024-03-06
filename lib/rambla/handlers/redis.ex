@@ -28,14 +28,29 @@ if :redis in Rambla.services() do
       {preferred_format, options} = Map.pop(options, :preferred_format, :map)
       {serializer, _options} = Map.pop(options, :serializer, Jason)
 
-      for {k, v} <- converter(preferred_format, message) do
-        value =
-          case serializer.encode(v) do
-            {:ok, json} -> json
-            {:error, _} -> inspect(v)
-          end
+      results =
+        for {k, v} <- converter(preferred_format, message) do
+          value =
+            case serializer.encode(v) do
+              {:ok, json} -> json
+              {:error, _} -> inspect(v)
+            end
 
-        Redix.command(name, ["SET", to_string(k), value])
+          case Redix.command(name, ["SET", to_string(k), value]) do
+            {:ok, %Redix.Error{} = error} -> {:error, error}
+            {:ok, redis_value} -> {:ok, redis_value}
+            {:error, error} -> {:error, error}
+          end
+        end
+
+      results
+      |> Enum.reduce({[], []}, fn
+        {:ok, result}, {results, errors} -> {[result | results], errors}
+        {:error, error}, {results, errors} -> {results, [error | errors]}
+      end)
+      |> case do
+        {results, []} -> {:ok, results}
+        {results, errors} -> {:error, %{failures: errors, successes: results}}
       end
     end
 

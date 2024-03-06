@@ -25,14 +25,12 @@ defmodule Rambla.MixProject do
         plt_add_apps: [
           :amqp,
           :redix,
-          :inets,
-          :ssl,
+          :pillar,
           :mix,
           :ex_aws,
           :ex_aws_s3,
           :finitomata,
           :jason,
-          :logger,
           :plug,
           :mox,
           :gen_smtp,
@@ -86,6 +84,7 @@ defmodule Rambla.MixProject do
 
       # optional backends
       {:amqp, "~> 3.0", optional: true},
+      {:pillar, "~> 0.37", optional: true},
       {:redix, "~> 1.0", optional: true},
       {:gen_smtp, "~> 0.4 or ~> 1.0", optional: true},
       {:telemetria, "~> 0.4 or ~> 1.0", optional: true},

@@ -51,6 +51,7 @@ defmodule Rambla do
     # optional backends
     {:amqp, "~> 3.0", optional: true},
     {:redix, "~> 1.0", optional: true},
+    {:pillar, "~> 0.39", optional: true},
     {:gen_smtp, "~> 0.4 or ~> 1.0", optional: true},
     {:telemetria, "~> 0.4 or ~> 1.0", optional: true},
 
@@ -202,5 +203,10 @@ defmodule Rambla do
     """
     @doc deprecated: "Use `publish(channels, FUNCTION, pid)` instead"
     defdelegate raw(target, f), to: Rambla.ConnectionPool
+  end
+
+  @doc false
+  def do_inspect(value) do
+    IO.puts(inspect(value))
   end
 end
