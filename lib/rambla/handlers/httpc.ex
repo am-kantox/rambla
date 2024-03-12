@@ -26,7 +26,14 @@ if :httpc in Rambla.services() do
     @doc false
     def handle_publish(%{message: message}, options, %{connection: %{channel: name}}) do
       conn = config() |> get_in([:channels, name, :connection])
-      uri = struct!(URI, get_in(config(), [:connections, conn]))
+
+      uri =
+        case get_in(config(), [:connections, conn]) do
+          %URI{} = uri -> uri
+          "http" <> _ = url -> URI.new!(url)
+          %{} = map -> struct!(URI, map)
+          [{key, _} | _] = list when is_atom(key) -> struct!(URI, list)
+        end
 
       {preferred_format, options} = Map.pop(options, :preferred_format, :none)
       {serializer, _options} = Map.pop(options, :serializer, Jason)
