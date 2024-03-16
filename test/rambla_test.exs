@@ -285,6 +285,14 @@ defmodule Test.Rambla do
 
     Rambla.Handlers.Httpc.publish(:chan_2, %{foo: 42}, self())
     assert_receive {:transition, :failure, _, _}, 3_000
+
+    Rambla.Handlers.Httpc.publish(
+      :chan_1,
+      %{message: %{foo: 42}, uri_merge: "/status/500"},
+      self()
+    )
+
+    assert_receive {:transition, :failure, _, _}, 3_000
   end
 
   @tag :skip

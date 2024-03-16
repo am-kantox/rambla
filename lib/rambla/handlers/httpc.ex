@@ -18,6 +18,17 @@ if :httpc in Rambla.services() do
 
     Rambla.Handlers.Httpc.publish(:chan_1, %{message: %{foo: 42}, serializer: Jason})
     ```
+
+    The `publish/2` function receives options which might be used to amend anything,
+      including but not limited to `URI`, which would be updated as shown below
+
+    ```elixir
+      uri =
+        uri
+        |> then(&if(uri_path, do: URI.append_path(&1, uri_path), else: &1))
+        |> then(&if(uri_query, do: URI.append_query(&1, uri_query), else: &1))
+        |> then(&if(uri_merge, do: URI.merge(&1, uri_merge), else: &1))
+    ```
     """
 
     use Rambla.Handler
@@ -65,6 +76,7 @@ if :httpc in Rambla.services() do
     def config, do: Application.get_env(:rambla, :httpc)
 
     def do_handle_publish(uri, body, opts) when is_map(opts) and is_binary(body) do
+      {uri, opts} = do_patch_uri(uri, opts)
       {method, opts} = Map.pop(opts, :method, :post)
       {headers, opts} = Map.pop(opts, :headers, [])
       {http_options, opts} = Map.pop(opts, :http_options, [])
@@ -83,6 +95,20 @@ if :httpc in Rambla.services() do
         {:ok, {{_, ko, _}, _, response}} when ko in 500..599 -> {:error, response}
         {:error, reason} -> {:error, reason}
       end
+    end
+
+    defp do_patch_uri(uri, opts) do
+      {uri_path, opts} = Map.pop(opts, :uri_append_path)
+      {uri_query, opts} = Map.pop(opts, :uri_append_query)
+      {uri_merge, opts} = Map.pop(opts, :uri_merge)
+
+      uri =
+        uri
+        |> then(&if(uri_path, do: URI.append_path(&1, uri_path), else: &1))
+        |> then(&if(uri_query, do: URI.append_query(&1, uri_query), else: &1))
+        |> then(&if(uri_merge, do: URI.merge(&1, uri_merge), else: &1))
+
+      {uri, opts}
     end
 
     @typep method :: :head | :get | :put | :post | :trace | :options | :delete | :patch
