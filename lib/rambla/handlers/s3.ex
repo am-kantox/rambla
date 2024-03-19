@@ -49,8 +49,22 @@ if :s3 in Rambla.services() do
       path = get_in(config(), [:connections, conn, :path]) || ""
 
       {connector, options} = Map.pop(options, :connector, ExAws)
+      {path, options} = Map.pop(options, :path, path)
 
-      do_handle_publish(File.exists?(message), connector, {bucket, path}, message, options)
+      {file, options} =
+        Map.pop_lazy(options, :file, fn ->
+          if File.exists?(message),
+            do: Path.basename(message),
+            else: DateTime.to_iso8601(DateTime.utc_now())
+        end)
+
+      do_handle_publish(
+        File.exists?(message),
+        connector,
+        {bucket, Path.join(["/", path, file])},
+        message,
+        options
+      )
     end
 
     def handle_publish(callback, options, %{connection: %{channel: name}})

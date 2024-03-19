@@ -311,7 +311,7 @@ defmodule Test.Rambla do
       assert %ExAws.Operation.S3{} = operation
       assert operation.http_method == :put
       assert operation.bucket == "test-bucket"
-      assert operation.path == "some/path"
+      assert operation.path =~ "/some/path"
 
       {:ok, %{body: "file contents"}}
     end)
