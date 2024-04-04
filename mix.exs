@@ -2,7 +2,7 @@ defmodule Rambla.MixProject do
   use Mix.Project
 
   @app :rambla
-  @version "1.2.4"
+  @version "1.2.5"
 
   def project do
     [
@@ -80,7 +80,7 @@ defmodule Rambla.MixProject do
       {:plug, "~> 1.9"},
       {:poolboy, "~> 1.5"},
       {:ranch, "~> 1.7 or ~> 2.0"},
-      {:finitomata, "~> 0.18"},
+      {:finitomata, "~> 0.20"},
 
       # optional backends
       {:amqp, "~> 3.0", optional: true},
