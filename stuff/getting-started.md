@@ -50,7 +50,7 @@ Publishing to the destination is as easy, as calling [`Rambla.html#publish/3`](h
 The following would publish the message to previously configured `:channel_1` channel.
 
 ```elixir
-Rambla.publish(:channel_1, %{message: %{foo: 42, bar: :baz}, exchange: "barfoo"})
+Rambla.publish(:chan_1, %{message: %{foo: 42, bar: :baz}, exchange: "barfoo"})
 ```
 
 ## Testing
