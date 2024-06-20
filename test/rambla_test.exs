@@ -15,6 +15,11 @@ defmodule Test.Rambla do
         {Rambla.Handlers.Amqp, [connection_options: [exchange: "amq.direct"], count: 3]}
       )
 
+    modern_reliable_amqp =
+      start_supervised!(
+        {Rambla.Handlers.ReliableAmqp, [connection_options: [exchange: "amq.direct"], count: 3]}
+      )
+
     modern_redis =
       start_supervised!({Rambla.Handlers.Redis, [count: 3]})
 
@@ -73,6 +78,7 @@ defmodule Test.Rambla do
     %{
       pools: pools,
       modern_amqp: modern_amqp,
+      modern_reliable_amqp: modern_reliable_amqp,
       modern_redis: modern_redis,
       modern_httpc: modern_httpc,
       modern_smtp: modern_smtp,
@@ -123,6 +129,19 @@ defmodule Test.Rambla do
     assert result1 and result2
     assert [:ok, :ok] = Enum.map([tag1, tag2], &AMQP.Basic.ack(chan, &1))
     assert {:empty, _} = AMQP.Basic.get(chan, "rambla-queue-4")
+    AMQP.Channel.close(chan)
+  end
+
+  test "modern works with reliable rabbit" do
+    Rambla.Handlers.Amqp.publish(:reliable_channel, %{message: %{foo: 42}, exchange: "rambla-exchange-1"})
+
+    {:ok, conn} = AMQP.Application.get_connection(:reliable)
+    {:ok, chan} = AMQP.Channel.open(conn)
+    {result, tag} = amqp_wait(chan, "rambla-queue-1", "{\"foo\":42}")
+
+    assert result
+    assert :ok = AMQP.Basic.ack(chan, tag)
+    assert {:empty, _} = AMQP.Basic.get(chan, "rambla-queue-1")
     AMQP.Channel.close(chan)
   end
 
