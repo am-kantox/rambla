@@ -14,7 +14,7 @@ if :httpc in Rambla.services() do
         chan_1: [connection: :httpbin, options: [headers: [{"accept", "application/json"}]]]
       ]
 
-    # Then you can access the connection/channel via `Rambla.Handlers.Amqp` as
+    # Then you can access the connection/channel via `Rambla.Handlers.Httpc` as
 
     Rambla.Handlers.Httpc.publish(:chan_1, %{message: %{foo: 42}, serializer: Jason})
     ```
