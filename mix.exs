@@ -128,10 +128,10 @@ defmodule Rambla.MixProject do
       groups_for_modules: [
         Handlers: [
           Rambla.Handlers.Amqp,
-          Rambla.Handlers.ReliableAmqp,
-          Rambla.Handlers.Redis,
-          Rambla.Handlers.S3,
           Rambla.Handlers.Httpc,
+          Rambla.Handlers.Redis,
+          Rambla.Handlers.ReliableAmqp,
+          Rambla.Handlers.S3,
           Rambla.Handlers.Smtp
         ],
         "Test/Dev Handlers": [
@@ -142,9 +142,9 @@ defmodule Rambla.MixProject do
         "Deprecated Backends": [
           Rambla.Amqp,
           Rambla.Http,
+          Rambla.Process,
           Rambla.Redis,
-          Rambla.Smtp,
-          Rambla.Process
+          Rambla.Smtp
         ],
         Expections: [Rambla.Exception]
       ]
