@@ -78,5 +78,11 @@ if :reliable_amqp in Rambla.services() do
     defp maybe_declare_exchange({type, options}, chan, exchange)
          when is_atom(type) and is_list(options),
          do: AMQP.Exchange.declare(chan, exchange, type, options)
+    
+    @impl Rambla.Handler
+    @doc false
+    def external_servers(_id) do
+      [Rambla.AMQPApplication, Rambla.AMQPProducerSupervisor]
+    end
   end
 end
