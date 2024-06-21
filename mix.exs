@@ -128,6 +128,7 @@ defmodule Rambla.MixProject do
       groups_for_modules: [
         Handlers: [
           Rambla.Handlers.Amqp,
+          Rambla.Handlers.Clickhouse,
           Rambla.Handlers.Httpc,
           Rambla.Handlers.Redis,
           Rambla.Handlers.ReliableAmqp,
