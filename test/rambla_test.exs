@@ -133,7 +133,7 @@ defmodule Test.Rambla do
   end
 
   test "modern works with reliable rabbit" do
-    Rambla.Handlers.Amqp.publish(:reliable_channel, %{message: %{foo: 42}, exchange: "rambla-exchange-1"})
+    Rambla.publish(:reliable_channel, %{message: %{foo: 42}, exchange: "rambla-exchange-1"})
 
     {:ok, conn} = AMQP.Application.get_connection(:reliable)
     {:ok, chan} = AMQP.Channel.open(conn)

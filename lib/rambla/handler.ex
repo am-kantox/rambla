@@ -82,7 +82,7 @@ defmodule Rambla.Handler do
 
   @doc "If specified, these services will be started before pools under `:rest_for_one`"
   @callback external_servers(Finitomata.Pool.id()) :: [
-              {module(), [any()]} | Supervisor.child_spec()
+              Supervisor.module_spec() | Supervisor.child_spec()
             ]
 
   defmodule RetryState do
