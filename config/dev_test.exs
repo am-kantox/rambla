@@ -109,6 +109,12 @@ config :rambla,
     ],
     handler: Rambla.Handlers.S3
   ],
+  reliable_amqp: [
+    connections: [  
+      reliable: [url: "amqp://guest:guest@localhost:5672"]
+    ],
+    channels: [reliable_channel: [connection: :reliable]]
+  ],
 
   # ===== << ======
   pools: [

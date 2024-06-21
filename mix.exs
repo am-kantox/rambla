@@ -81,9 +81,11 @@ defmodule Rambla.MixProject do
       {:poolboy, "~> 1.5"},
       {:ranch, "~> 1.7 or ~> 2.0"},
       {:finitomata, "~> 0.20"},
+      {:elixir_uuid, "~> 1.2"},
 
       # optional backends
       {:amqp, "~> 3.0", optional: true},
+      {:amqp_helpers, "~> 1.1", optional: true},
       {:pillar, "~> 0.37", optional: true},
       {:redix, "~> 1.0", optional: true},
       {:gen_smtp, "~> 0.4 or ~> 1.0", optional: true},
@@ -129,6 +131,7 @@ defmodule Rambla.MixProject do
           Rambla.Handlers.Clickhouse,
           Rambla.Handlers.Httpc,
           Rambla.Handlers.Redis,
+          Rambla.Handlers.ReliableAmqp,
           Rambla.Handlers.S3,
           Rambla.Handlers.Smtp
         ],
@@ -140,9 +143,9 @@ defmodule Rambla.MixProject do
         "Deprecated Backends": [
           Rambla.Amqp,
           Rambla.Http,
+          Rambla.Process,
           Rambla.Redis,
-          Rambla.Smtp,
-          Rambla.Process
+          Rambla.Smtp
         ],
         Expections: [Rambla.Exception]
       ]

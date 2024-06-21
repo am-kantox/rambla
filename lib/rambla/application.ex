@@ -13,11 +13,10 @@ defmodule Rambla.Application do
       {&:logger_filters.domain/2, {:stop, :equal, [:progress]}}
     )
 
-    children = [
-      Rambla.ConnectionPool
-    ]
+    children = [Rambla.ConnectionPool]
 
     opts = [strategy: :one_for_one, name: Rambla.Supervisor]
+
     Supervisor.start_link(children, opts)
   end
 end
