@@ -190,7 +190,7 @@ defmodule Rambla do
 
   def publish(channels, message, pid) do
     for channel <- channels,
-        service <- Map.get(@channels, channel, []),
+        service <- Map.get(channels(), channel, []),
         handler <- [handler_for_service(service)] do
       handler.publish(channel, message, pid)
     end
