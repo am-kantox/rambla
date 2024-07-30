@@ -77,6 +77,7 @@ defmodule Rambla do
   defp channel_services,
     do: channels() |> Map.values() |> Enum.reduce([], &Kernel.++/2) |> Enum.uniq()
 
+  @doc "Returns a list of all the configured services (connections)"
   def services do
     explicit = Application.get_env(:rambla, :services, [])
     Enum.uniq(explicit ++ channel_services())
