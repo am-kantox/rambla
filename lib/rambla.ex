@@ -23,7 +23,7 @@ defmodule Rambla do
 
   Additional option, one might pass to the channel config, would be explicit handlers
     for failures and success calls (by default the former prints the warning and retries
-    until the maximum count of retries reached, and then calls `on_fatal/2` callback, 
+    until the maximum count of retries reached, and then calls `on_fatal/2` callback,
     and the latter logs a debug message.)
 
   ```elixir
@@ -38,7 +38,7 @@ defmodule Rambla do
 
   ---
 
-  To start pools, simply embed `Rambla` into the supervision tree, it’d 
+  To start pools, simply embed `Rambla` into the supervision tree, it’d
     start a supervisor with children for all the configured services.
 
   The configuration of the service implies all the `Rambla`’s code for it will
@@ -71,18 +71,26 @@ defmodule Rambla do
     named `channel_1`.
   """
 
-  @channels for {service, opts} when is_list(opts) <-
-                  Application.get_all_env(:rambla) ++ [{:amqp, Application.get_all_env(:amqp)}],
-                {:channels, opts} <- opts,
-                {name, _} <- opts,
-                reduce: %{},
-                do: (acc -> Map.update(acc, name, [service], &[service | &1]))
-
   @doc "Returns a map `%{‹service› => [‹channels›]}`"
-  def channels, do: @channels
-  @doc "Returns a list of all the configured connections"
-  def services,
-    do: @channels |> Map.values() |> Enum.reduce([], &Kernel.++/2) |> Enum.uniq()
+  def channels, do: get_all_channels()
+
+  defp channel_services,
+    do: channels() |> Map.values() |> Enum.reduce([], &Kernel.++/2) |> Enum.uniq()
+
+  @doc "Returns a list of all the configured services (connections)"
+  def services do
+    explicit = Application.get_env(:rambla, :services, [])
+    Enum.uniq(explicit ++ channel_services())
+  end
+
+  defp get_all_channels do
+    for {service, opts} when is_list(opts) <-
+          Application.get_all_env(:rambla) ++ [{:amqp, Application.get_all_env(:amqp)}],
+        {:channels, opts} <- opts,
+        {name, _} <- opts,
+        reduce: %{},
+        do: (acc -> Map.update(acc, name, [service], &[service | &1]))
+  end
 
   @doc false
   def handler_for_service(name) do
@@ -104,10 +112,7 @@ defmodule Rambla do
 
   @impl true
   def init(_opts) do
-    @channels
-    |> Map.values()
-    |> Enum.reduce([], &Kernel.++/2)
-    |> Enum.uniq()
+    services()
     |> Enum.map(&handler_for_service/1)
     |> case do
       [] -> :ignore
@@ -175,7 +180,7 @@ defmodule Rambla do
 
   def publish(channels, message, pid) do
     for channel <- channels,
-        service <- Map.get(@channels, channel, []),
+        service <- Map.get(channels(), channel, []),
         handler <- [handler_for_service(service)] do
       handler.publish(channel, message, pid)
     end
