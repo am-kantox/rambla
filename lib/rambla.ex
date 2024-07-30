@@ -71,27 +71,15 @@ defmodule Rambla do
     named `channel_1`.
   """
 
-  @channels for {service, opts} when is_list(opts) <-
-                  Application.get_all_env(:rambla) ++ [{:amqp, Application.get_all_env(:amqp)}],
-                {:channels, opts} <- opts,
-                {name, _} <- opts,
-                reduce: %{},
-                do: (acc -> Map.update(acc, name, [service], &[service | &1]))
-
-  @services :rambla |> Application.get_all_env() |> Keyword.get(:services, [])
-
   @doc "Returns a map `%{‹service› => [‹channels›]}`"
-  def channels do
-    if Enum.empty?(@services), do: @channels, else: get_all_channels()
-  end
+  def channels, do: get_all_channels()
 
-  @doc "Returns a list of all the configured connections"
+  defp channel_services,
+    do: channels() |> Map.values() |> Enum.reduce([], &Kernel.++/2) |> Enum.uniq()
+
   def services do
-    if Enum.empty?(@services) do
-      @channels |> Map.values() |> Enum.reduce([], &Kernel.++/2) |> Enum.uniq()
-    else
-      Enum.uniq(@services)
-    end
+    explicit = Application.get_env(:rambla, :services, [])
+    Enum.uniq(explicit ++ channel_services())
   end
 
   defp get_all_channels do
