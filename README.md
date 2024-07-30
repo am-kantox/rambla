@@ -27,6 +27,7 @@ end
 
 ## Changelog
 
+- **`1.2.6`** Allow `runtime.exs` config for services
 - **`1.2.3`** Allow patching `URI` in `:httpc` backend
 - **`1.2.1`** `Clickhouse` backend
 - **`1.2.0`** allow `on_success/1` and `on_failure/1` callbacks to better control the execution 
