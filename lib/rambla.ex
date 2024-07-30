@@ -112,7 +112,8 @@ defmodule Rambla do
 
   @impl true
   def init(_opts) do
-    Enum.map(services(), &handler_for_service/1)
+    services()
+    |> Enum.map(&handler_for_service/1)
     |> case do
       [] -> :ignore
       children -> Supervisor.init(children, strategy: :one_for_one)
