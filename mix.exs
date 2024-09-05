@@ -153,6 +153,5 @@ defmodule Rambla.MixProject do
   defp elixirc_paths(:ci), do: ["lib", "test/support"]
   defp elixirc_paths(_), do: ["lib"]
 
-  defp compilers(:test), do: [:telemetria | Mix.compilers()]
-  defp compilers(_), do: Mix.compilers()
+  defp compilers(_), do: Mix.compilers() ++ [:telemetria, :finitomata]
 end

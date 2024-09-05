@@ -31,3 +31,4 @@ rambla-*.tar
 config/.telemetria.config.json
 
 /.elixir-tools/
+.tool-versions
