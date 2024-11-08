@@ -1,4 +1,4 @@
-s3 = Application.compile_env(:rambla, :s3)
+s3 = Application.get_env(:rambla, :s3)
 
 if Keyword.keyword?(s3) do
   connectors =
