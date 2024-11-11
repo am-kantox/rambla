@@ -1,6 +1,6 @@
 defmodule Rambla.Handler do
   @moduledoc """
-  Default handler for AMQP connections.
+  Default handler scaffold for all the connections.
 
   > ### `use Rambla.Handler` {: .info}
   >
