@@ -320,6 +320,32 @@ defmodule Test.Rambla do
     assert_receive {:transition, :success, _, _}, 1_000
   end
 
+  @tag :skip
+  test "modern use clickhouse" do
+    Rambla.Test.Clickhouse.prepare()
+
+    assert [:ok] ==
+             Rambla.publish(:chan, %{
+               table: :events,
+               message: %{
+                 source_id: UUID.uuid4(),
+                 timestamp: System.os_time(),
+                 message: %{foo: 42}
+               }
+             })
+
+    assert {:ok,
+            [
+              %{
+                "message" => "{\"foo\":42}",
+                "source_id" => _uuid,
+                "timestamp" => %DateTime{}
+              }
+            ]} == Rambla.Test.Clickhouse.select_from_table_events()
+
+    Rambla.Test.Clickhouse.drop_table_events()
+  end
+
   test "modern use generic mocks" do
     expect(Rambla.Mocks.Generic, :on_publish, fn name, message, opts ->
       assert name == :chan_0

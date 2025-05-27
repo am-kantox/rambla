@@ -36,7 +36,7 @@ if :redis in Rambla.services() do
               {:error, _} -> inspect(v)
             end
 
-          case Redix.command(name, ["SET", to_string(k), value]) do
+          case Redix.command(redix_name(name), ["SET", to_string(k), value]) do
             {:ok, %Redix.Error{} = error} -> {:error, error}
             {:ok, redis_value} -> {:ok, redis_value}
             {:error, error} -> {:error, error}
@@ -68,8 +68,12 @@ if :redis in Rambla.services() do
 
     @impl Rambla.Handler
     @doc false
-    def external_servers(id) do
-      [{Redix, name: id}]
+    def external_servers(channel) do
+      [{Redix, name: redix_name(channel)}]
+    end
+
+    defp redix_name(channel) do
+      Module.concat([Redix, channel])
     end
   end
 end

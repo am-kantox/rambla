@@ -83,8 +83,9 @@ defmodule Rambla.MixProject do
       {:finitomata, "~> 0.20"},
 
       # optional backends
-      {:amqp, "~> 3.0", optional: true},
-      {:pillar, "~> 0.37", optional: true},
+      {:elixir_uuid, "~> 1.2", optional: true},
+      {:amqp, "~> 4.0", optional: true},
+      {:caterpillar, "~> 0.40", optional: true},
       {:redix, "~> 1.0", optional: true},
       {:gen_smtp, "~> 0.4 or ~> 1.0", optional: true},
       {:telemetria, "~> 0.4 or ~> 1.0", optional: true},
@@ -98,6 +99,7 @@ defmodule Rambla.MixProject do
       {:configparser_ex, "~> 4.0", optional: true},
 
       # dev, test
+      {:observer_cli, "~> 1.0", only: [:dev, :ci]},
       {:mox, "~> 1.0", only: [:dev, :ci, :test]},
       {:credo, "~> 1.0", only: [:dev, :ci], runtime: false},
       {:dialyxir, "~> 1.0", only: [:dev, :ci], runtime: false},
@@ -149,9 +151,8 @@ defmodule Rambla.MixProject do
     ]
   end
 
-  defp elixirc_paths(:test), do: ["lib", "test/support"]
-  defp elixirc_paths(:ci), do: ["lib", "test/support"]
-  defp elixirc_paths(_), do: ["lib"]
+  defp elixirc_paths(:prod), do: ["lib"]
+  defp elixirc_paths(_), do: ["lib", "test/support"]
 
   defp compilers(_), do: Mix.compilers() ++ [:telemetria, :finitomata]
 end

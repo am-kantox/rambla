@@ -80,32 +80,18 @@ defmodule Rambla.Amqp do
     defp queue!(_, %{exchange: _exchange}), do: :ok
   end
 
-  @with_amqp match?({:module, _}, Code.ensure_compiled(AMQP.Channel))
-
   @behaviour Rambla.Connection
-
-  @impl Rambla.Connection
-  def connect(params) when is_list(params) do
-    if not @with_amqp or is_nil(params[:host]),
-      do:
-        raise(Rambla.Exceptions.Connection,
-          value: params,
-          source: __MODULE__,
-          reason: "inconsistent params",
-          expected: "🐰 configuration with :host key"
-        )
-
-    maybe_amqp(params)
-  end
 
   @impl Rambla.Connection
   def publish(%Rambla.Connection.Config{} = conn, message)
       when is_binary(message) or is_list(message) or is_map(message),
       do: ChannelPool.publish(conn, message)
 
-  if @with_amqp do
-    defp maybe_amqp(params) do
-      with {:ok, conn} <- AMQP.Connection.open(params),
+  @impl Rambla.Connection
+  if match?({:module, _}, Code.ensure_compiled(AMQP.Channel)) do
+    def connect(params) when is_list(params) do
+      with {:ok, _host} <- Keyword.fetch(params, :host),
+           {:ok, conn} <- AMQP.Connection.open(params),
            {:ok, chan} <- AMQP.Channel.open(conn) do
         Process.link(conn.pid)
 
@@ -117,6 +103,14 @@ defmodule Rambla.Amqp do
           errors: []
         }
       else
+        :error ->
+          raise(Rambla.Exceptions.Connection,
+            value: params,
+            source: __MODULE__,
+            reason: "inconsistent params",
+            expected: "🐰 configuration with :host key"
+          )
+
         error ->
           %Rambla.Connection{
             conn: %Rambla.Connection.Config{},
@@ -128,21 +122,14 @@ defmodule Rambla.Amqp do
       end
     end
   else
-    defp maybe_amqp(params) do
-      error =
-        Rambla.Exceptions.Connection.exception(
-          source: __MODULE__,
-          info: params,
-          reason: "🐰 AMQP should be explicitly included to use this functionality"
-        )
-
-      %Rambla.Connection{
-        conn: %Rambla.Connection.Config{},
-        conn_type: __MODULE__,
-        conn_pid: nil,
-        conn_params: params,
-        errors: [error]
-      }
+    def connect(params) do
+      raise(Rambla.Exceptions.Connection,
+        source: __MODULE__,
+        info: params,
+        source: __MODULE__,
+        reason: "missing dependencies",
+        expected: "🐰 Rabbit must be added to `deps()`"
+      )
     end
   end
 end

@@ -206,7 +206,9 @@ defmodule Rambla.Handler do
             ~w|name strategy max_restarts max_seconds max_children extra_arguments|a
           )
 
-        opts |> children_specs() |> Supervisor.start_link([{:strategy, :one_for_one} | sup_opts])
+        opts
+        |> children_specs()
+        |> Supervisor.start_link(Keyword.put_new(sup_opts, :strategy, :one_for_one))
       end
 
       defoverridable children_specs: 1, start_link: 1

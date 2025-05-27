@@ -1,4 +1,32 @@
 if :clickhouse in Rambla.services() do
+  connections =
+    :rambla
+    |> Application.compile_env(:clickhouse, [])
+    |> Keyword.get(:connections, [])
+    |> Map.new(fn
+      {_conn, :no_pool} ->
+        []
+
+      {conn, conn_string} ->
+        module =
+          Module.concat([Rambla.Services.Clickhouse, conn |> to_string() |> Macro.camelize()])
+
+        use_options =
+          case conn_string do
+            string when is_binary(string) ->
+              [connection_strings: List.wrap(string), name: module]
+
+            {string, opts} ->
+              [connection_strings: List.wrap(string), name: module] ++ opts
+          end
+
+        defmodule module do
+          use Pillar, unquote(use_options)
+        end
+
+        {conn, module}
+    end)
+
   defmodule Rambla.Handlers.Clickhouse do
     @moduledoc """
     Default handler for _Clickhouse_ connections. For this handler to work properly,
@@ -20,7 +48,7 @@ if :clickhouse in Rambla.services() do
 
     ---
 
-    To install `Clickhouse`, visit https://clickhouse.com/docs/en/getting-started
+    To install `Clickhouse`, visit https://clickhouse.com/docs
 
     ```sql
     CREATE TABLE events
@@ -51,18 +79,14 @@ if :clickhouse in Rambla.services() do
     def handle_publish(
           %{message: %{} = message},
           options,
-          %{connection: %{channel: name}}
+          %{connection: %{params: conn_params, channel: name}}
         ) do
-      with {:ok, table} <- Map.fetch(options, :table) do
-        conn = config() |> get_in([:channels, name, :connection])
-        conn = config() |> get_in([:connections, conn]) |> Pillar.Connection.new()
-
-        keys = Map.keys(message)
-        fields = Enum.join(keys, ", ")
-        select = Enum.map_join(keys, ", ", &"{#{&1}}")
-
-        Pillar.insert(conn, "INSERT INTO #{table} (#{fields}) SELECT #{select}", message)
-      end
+      do_handle_publish(
+        Map.get(unquote(Macro.escape(connections)), Keyword.get(conn_params, :connection)),
+        message,
+        options,
+        name
+      )
     end
 
     def handle_publish(callback, options, %{connection: %{channel: name}})
@@ -73,8 +97,43 @@ if :clickhouse in Rambla.services() do
     def handle_publish(payload, options, state),
       do: handle_publish(%{message: payload}, options, state)
 
+    defp do_handle_publish(nil, message, options, name) do
+      with {:ok, table} <- Map.fetch(options, :table) do
+        conn = config() |> get_in([:channels, name, :connection])
+        conn = config() |> get_in([:connections, conn]) |> Pillar.Connection.new()
+
+        keys = Map.keys(message)
+        fields = Enum.join(keys, ", ")
+        select = Enum.map_join(keys, ", ", &"{#{&1}}")
+
+        sql = "INSERT INTO #{table} (#{fields}) SELECT #{select}"
+
+        Pillar.insert(conn, sql, message)
+      end
+    end
+
+    defp do_handle_publish(mod, message, options, _name) do
+      with {:ok, table} <- Map.fetch(options, :table),
+           do: table |> to_string() |> mod.insert_to_table(message)
+    end
+
     @impl Rambla.Handler
     @doc false
     def config, do: Application.get_env(:rambla, :clickhouse)
+
+    @impl Rambla.Handler
+    @doc false
+    def external_servers(channel) do
+      config()
+      |> Keyword.get(:channels, [])
+      |> Enum.find(&match?({^channel, _}, &1))
+      |> List.wrap()
+      |> Enum.flat_map(fn {^channel, kw} ->
+        kw |> Keyword.get(:connection, nil) |> List.wrap()
+      end)
+      |> Enum.map(fn conn ->
+        Map.get(unquote(Macro.escape(connections)), conn)
+      end)
+    end
   end
 end

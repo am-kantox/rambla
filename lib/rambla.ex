@@ -72,18 +72,7 @@ defmodule Rambla do
   """
 
   @doc "Returns a map `%{‹service› => [‹channels›]}`"
-  def channels, do: get_all_channels()
-
-  defp channel_services,
-    do: channels() |> Map.values() |> Enum.reduce([], &Kernel.++/2) |> Enum.uniq()
-
-  @doc "Returns a list of all the configured services (connections)"
-  def services do
-    explicit = Application.get_env(:rambla, :services, [])
-    Enum.uniq(explicit ++ channel_services())
-  end
-
-  defp get_all_channels do
+  def channels do
     for {service, opts} when is_list(opts) <-
           Application.get_all_env(:rambla) ++ [{:amqp, Application.get_all_env(:amqp)}],
         {:channels, opts} <- opts,
@@ -92,19 +81,44 @@ defmodule Rambla do
         do: (acc -> Map.update(acc, name, [service], &[service | &1]))
   end
 
+  @doc "Returns a map `%{‹channel› => [‹connection›]}`"
+  def connections do
+    configs = Application.get_all_env(:rambla) ++ [{:amqp, Application.get_all_env(:amqp)}]
+
+    configs
+    |> get_in([Access.all(), Access.elem(1), :channels])
+    |> Enum.filter(&Keyword.keyword?/1)
+    |> List.flatten()
+    |> Enum.reduce(%{}, fn {chan, config}, acc ->
+      Map.update(acc, chan, [config], &[config | &1])
+    end)
+  end
+
+  @doc "Returns a list of all the configured services (connections)"
+  def services do
+    channel_services = channels() |> Map.values() |> Enum.reduce([], &Kernel.++/2)
+    explicit = Application.get_env(:rambla, :services, [])
+    Enum.uniq(explicit ++ channel_services)
+  end
+
   @doc false
   def handler_for_service(name) do
-    case Application.get_env(:rambla, name) do
-      [{_, _} | _] = cfg -> Keyword.get(cfg, :handler)
-      _ -> nil
-    end || Module.concat(Rambla.Handlers, name |> to_string() |> Macro.camelize())
+    with nil <- :persistent_term.get({Rambla, {:handler, name}}, nil) do
+      handler =
+        case Application.get_env(:rambla, name) do
+          [{_, _} | _] = cfg -> Keyword.get(cfg, :handler)
+          _ -> nil
+        end || Module.concat(Rambla.Handlers, name |> to_string() |> Macro.camelize())
+
+      tap(handler, &:persistent_term.put({Rambla, {:handler, name}}, &1))
+    end
   end
 
   use Supervisor
 
   @doc "Starts the supervisor with all the configured services"
   def start_link(opts \\ []) do
-    case Keyword.pop(opts, :name) do
+    case Keyword.pop_lazy(opts, :name, fn -> Keyword.get(opts, :id) end) do
       {nil, opts} -> Supervisor.start_link(__MODULE__, opts)
       {name, opts} -> Supervisor.start_link(__MODULE__, opts, name: name)
     end

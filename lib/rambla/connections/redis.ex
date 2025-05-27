@@ -3,25 +3,7 @@ defmodule Rambla.Redis do
   Default connection implementation for 🔴 Redis.
   """
 
-  @with_redis match?({:module, _}, Code.ensure_compiled(Redix))
-
   @behaviour Rambla.Connection
-
-  @impl Rambla.Connection
-
-  def connect(params) when is_list(params) do
-    if not @with_redis or is_nil(params[:host]),
-      do:
-        raise(Rambla.Exceptions.Connection,
-          source: __MODULE__,
-          info: params,
-          source: __MODULE__,
-          reason: "inconsistent params",
-          expected: "🔴 Redix configuration with :host key"
-        )
-
-    maybe_redis(params)
-  end
 
   @impl Rambla.Connection
   def publish(%Rambla.Connection.Config{} = conn, message) when is_binary(message),
@@ -34,8 +16,19 @@ defmodule Rambla.Redis do
     apply(Redix, :pipeline, [pid, to_pipeline])
   end
 
-  if @with_redis do
-    defp maybe_redis(params) do
+  @impl Rambla.Connection
+  if match?({:module, _}, Code.ensure_compiled(Redix)) do
+    def connect(params) when is_list(params) do
+      with :error <- Keyword.fetch(params, :host),
+           do:
+             raise(Rambla.Exceptions.Connection,
+               source: __MODULE__,
+               info: params,
+               source: __MODULE__,
+               reason: "inconsistent params",
+               expected: "🔴 Redix configuration with :host key"
+             )
+
       params =
         params
         |> Keyword.get(:password, "")
@@ -65,21 +58,14 @@ defmodule Rambla.Redis do
       end
     end
   else
-    defp maybe_redis(params) do
-      error =
-        Rambla.Exceptions.Connection.exception(
-          source: __MODULE__,
-          info: params,
-          reason: "🔴 Redix should be explicitly included to use this functionality"
-        )
-
-      %Rambla.Connection{
-        conn: %Rambla.Connection.Config{},
-        conn_type: __MODULE__,
-        conn_pid: nil,
-        conn_params: params,
-        errors: [error]
-      }
+    def connect(params) do
+      raise(Rambla.Exceptions.Connection,
+        source: __MODULE__,
+        info: params,
+        source: __MODULE__,
+        reason: "missing dependencies",
+        expected: "🔴 Redix must be added to `deps()`"
+      )
     end
   end
 end
