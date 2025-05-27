@@ -124,7 +124,14 @@ defmodule Rambla.MixProject do
       source_url: "https://github.com/am-kantox/#{@app}",
       canonical: "http://hexdocs.pm/#{@app}",
       logo: "stuff/logo-48x48.png",
-      extras: ["README.md", "stuff/getting-started.md", "stuff/testing.md"],
+      extras: [
+        "README.md",
+        "stuff/getting-started.md",
+        "stuff/testing.md",
+        "stuff/backends.md",
+        "stuff/configuration.md",
+        "stuff/custom_backends.md"
+      ],
       groups_for_modules: [
         Handlers: [
           Rambla.Handlers.Amqp,
