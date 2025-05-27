@@ -341,7 +341,7 @@ defmodule Test.Rambla do
                 "source_id" => _uuid,
                 "timestamp" => %DateTime{}
               }
-            ]} == Rambla.Test.Clickhouse.select_from_table_events()
+            ]} = Rambla.Test.Clickhouse.select_from_table_events()
 
     Rambla.Test.Clickhouse.drop_table_events()
   end
