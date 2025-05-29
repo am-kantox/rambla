@@ -32,6 +32,9 @@ if :mock in Rambla.services() do
 
     @impl Rambla.Handler
     @doc false
+    def handle_publish(messages, options, state) when is_list(messages),
+      do: Enum.each(messages, &handle_publish(&1, options, state))
+
     def handle_publish(%{message: message}, options, %{connection: %{channel: name}}) do
       {mock, options} = Map.pop(options, :mock, Rambla.Mocks.Generic)
       {preferred_format, options} = Map.pop(options, :preferred_format, :none)

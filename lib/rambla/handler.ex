@@ -232,14 +232,45 @@ defmodule Rambla.Handler do
       end
 
       @impl Finitomata.Pool.Actor
-      def actor(payload, %{} = state) when is_list(payload) do
-        if Keyword.keyword?(payload),
-          do: payload |> Map.new() |> actor(state),
-          else: actor(payload, state)
-      end
-
       def actor(%RetryState{payload: payload, retries: retries}, state) do
         actor(payload, %{state | retries: retries})
+      end
+
+      def actor(payload, %{} = state) when is_list(payload) do
+        payload
+        |> Enum.group_by(&extract_options(&1, state))
+        |> Enum.reduce(nil, fn {options, payloads}, acc ->
+          case {do_one_actor(payloads, options, state, state.retries), acc} do
+            {{any, {on, res}}, nil} ->
+              {any, {on, [res]}}
+
+            {{:ok, {on_result, result}}, {:ok, {on_result, results}}} ->
+              {:ok, on_result, [result | results]}
+
+            {{:ok, {on_result_new, result}}, {:ok, {on_result_old, results}}} ->
+              Logger.warning(
+                "[🖇️] #{__MODULE__}[⚡] → Bulk has divergent callbacks, using the last one"
+              )
+
+              {:ok, on_result_new, [result | results]}
+
+            {{:error, {on_error, error}}, {:error, {on_error, errors}}} ->
+              {:error, on_error, [error | errors]}
+
+            {{:error, {on_error_new, error}}, {:error, {on_error_old, errors}}} ->
+              Logger.warning(
+                "[🖇️] #{__MODULE__}[⚡] → Bulk has divergent error callbacks, using the last one"
+              )
+
+              {:error, on_error_new, [error | errors]}
+
+            {{:error, {on_error, error}}, _} ->
+              {:error, on_error, [error]}
+
+            {_, acc} ->
+              acc
+          end
+        end)
       end
 
       def actor(payload, state) do
@@ -250,6 +281,10 @@ defmodule Rambla.Handler do
             do: Map.pop(payload, :retries, state.retries),
             else: {state.retries, payload}
 
+        do_one_actor(payload, options, state, retries)
+      end
+
+      defp do_one_actor(payload, options, state, retries) do
         on_result = get_in(options, [:callbacks, :on_success])
         on_error = get_in(options, [:callbacks, :on_failure])
 
@@ -361,10 +396,6 @@ defmodule Rambla.Handler do
       ```
       """
       def publish(id, payload, pid \\ nil)
-
-      def publish(id, payloads, pid) when is_list(payloads) do
-        Enum.each(payloads, &publish(id, &1, pid))
-      end
 
       def publish(id, payload, pid) do
         id |> fqn_id() |> Finitomata.Pool.run(payload, pid)

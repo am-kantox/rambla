@@ -24,6 +24,9 @@ if :redis in Rambla.services() do
 
     @impl Rambla.Handler
     @doc false
+    def handle_publish(messages, options, state) when is_list(messages),
+      do: Enum.each(messages, &handle_publish(&1, options, state))
+
     def handle_publish(%{message: message}, options, %{connection: %{channel: name}}) do
       {preferred_format, options} = Map.pop(options, :preferred_format, :map)
       {serializer, _options} = Map.pop(options, :serializer, Jason)

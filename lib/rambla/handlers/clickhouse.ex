@@ -66,6 +66,27 @@ if :clickhouse in Rambla.services() do
 
     @impl Rambla.Handler
     @doc false
+    def handle_publish(
+          messages,
+          options,
+          %{connection: %{params: conn_params, channel: name}} = state
+        )
+        when is_list(messages) do
+      case Map.get(unquote(Macro.escape(connections)), Keyword.get(conn_params, :connection)) do
+        nil ->
+          Enum.each(messages, &handle_publish(&1, options, state))
+
+        mod ->
+          messages =
+            Enum.map(messages, fn
+              %{message: message} -> message
+              message -> message
+            end)
+
+          do_handle_publish(mod, messages, options, name)
+      end
+    end
+
     def handle_publish(%{message: message}, options, state) when is_binary(message) do
       {serializer, options} = Map.pop(options, :serializer, Jason)
 

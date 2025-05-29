@@ -2,7 +2,7 @@ defmodule Rambla.MixProject do
   use Mix.Project
 
   @app :rambla
-  @version "1.3.0"
+  @version "1.4.0"
 
   def project do
     [
@@ -25,7 +25,7 @@ defmodule Rambla.MixProject do
         plt_add_apps: [
           :amqp,
           :redix,
-          :pillar,
+          :caterpillar,
           :mix,
           :ex_aws,
           :ex_aws_s3,

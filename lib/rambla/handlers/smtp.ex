@@ -50,6 +50,9 @@ if :smtp in Rambla.services() do
 
     @impl Rambla.Handler
     @doc false
+    def handle_publish(messages, options, state) when is_list(messages),
+      do: Enum.each(messages, &handle_publish(&1, options, state))
+
     def handle_publish(%{message: message}, options, %{connection: %{channel: name}}) do
       conn = config() |> get_in([:channels, name, :connection])
       params = get_in(config(), [:connections, conn])
