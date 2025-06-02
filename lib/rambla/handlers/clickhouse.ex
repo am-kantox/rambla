@@ -20,6 +20,8 @@ if :clickhouse in Rambla.services() do
               [connection_strings: List.wrap(string), name: module] ++ opts
           end
 
+        Code.ensure_compiled!(Pillar)
+
         defmodule module do
           use Pillar, unquote(use_options)
         end
