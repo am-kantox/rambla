@@ -96,7 +96,7 @@ defmodule Rambla.MixProject do
       {:ex_aws_sts, "~> 2.0", optional: true},
       {:hackney, "~> 1.9", optional: true},
       {:sweet_xml, "~> 0.6", optional: true},
-      {:configparser_ex, "~> 4.0 or ~> 5.0", optional: true, override: true},
+      {:configparser_ex, "~> 4.0 or ~> 5.0", optional: true},
 
       # dev, test
       {:observer_cli, "~> 1.0", only: [:dev, :ci]},
