@@ -2,7 +2,7 @@ defmodule Rambla.MixProject do
   use Mix.Project
 
   @app :rambla
-  @version "1.4.1"
+  @version "1.4.2"
 
   def project do
     [
@@ -25,12 +25,12 @@ defmodule Rambla.MixProject do
         plt_add_apps: [
           :amqp,
           :redix,
-          :caterpillar,
           :mix,
           :ex_aws,
           :ex_aws_s3,
           :finitomata,
           :jason,
+          :pillar,
           :plug,
           :mox,
           :gen_smtp,
@@ -85,7 +85,7 @@ defmodule Rambla.MixProject do
       # optional backends
       {:elixir_uuid, "~> 1.2", optional: true},
       {:amqp, "~> 4.0", optional: true},
-      {:caterpillar, "~> 0.40", optional: true},
+      {:pillar, "~> 0.39", optional: true},
       {:redix, "~> 1.0", optional: true},
       {:gen_smtp, "~> 0.4 or ~> 1.0", optional: true},
       {:telemetria, "~> 0.4 or ~> 1.0", optional: true},
@@ -96,7 +96,7 @@ defmodule Rambla.MixProject do
       {:ex_aws_sts, "~> 2.0", optional: true},
       {:hackney, "~> 1.9", optional: true},
       {:sweet_xml, "~> 0.6", optional: true},
-      {:configparser_ex, "~> 4.0", optional: true},
+      {:configparser_ex, "~> 4.0 or ~> 5.0", optional: true, override: true},
 
       # dev, test
       {:observer_cli, "~> 1.0", only: [:dev, :ci]},
