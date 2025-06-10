@@ -158,10 +158,10 @@ defmodule Rambla.Connection do
   def handle_call(
         {:publish, messages, opts},
         _,
-        %Rambla.Connection{conn_type: conn_type, conn: conn} = state
+        %Rambla.Connection{conn_type: conn_type, conn: %Config{} = conn} = state
       )
       when is_list(messages) do
-    conn = %Config{conn | opts: Map.merge(conn.opts, Map.new(opts))}
+    conn = %{conn | opts: Map.merge(conn.opts, Map.new(opts))}
 
     {result, errors} =
       if conn.full_result do
@@ -181,18 +181,17 @@ defmodule Rambla.Connection do
         {:ok, []}
       end
 
-    {:reply, result,
-     %Rambla.Connection{state | errors: Enum.take(errors ++ state.errors, @keep_errors)}}
+    {:reply, result, %{state | errors: Enum.take(errors ++ state.errors, @keep_errors)}}
   end
 
   @impl GenServer
   def handle_call(
         {:publish, message, opts},
         _,
-        %Rambla.Connection{conn_type: conn_type, conn: conn} = state
+        %Rambla.Connection{conn_type: conn_type, conn: %Config{} = conn} = state
       )
       when is_binary(message) or is_map(message) do
-    conn = %Config{conn | opts: Map.merge(conn.opts, Map.new(opts))}
+    conn = %{conn | opts: Map.merge(conn.opts, Map.new(opts))}
     {:reply, conn_type.publish(conn, message), state}
   end
 

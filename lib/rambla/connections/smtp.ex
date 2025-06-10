@@ -62,7 +62,7 @@ defmodule Rambla.Smtp do
     {subject, message} = Map.pop(message, :subject, Map.pop(opts, :subject, ""))
     {body, _message} = Map.pop(message, :body, Map.pop(opts, :body, ""))
 
-    from_with_name = for {name, email} <- from, do: "#{name} <#{email}>"
+    [_ | _] = from_with_name = for {name, email} <- from, do: "#{name} <#{email}>"
 
     smtp_message =
       ["Subject: ", "From: ", "To: ", "\r\n"]
